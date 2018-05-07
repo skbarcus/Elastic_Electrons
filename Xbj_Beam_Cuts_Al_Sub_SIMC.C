@@ -280,6 +280,7 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
 
   gStyle->SetOptStat(0);
   h1->Draw();
+  c1->Update();
   //cout<<"# evt_136 = "<<evt_136<<endl;
   //cout<<"# evt_8 = "<<evt_8<<endl;
 
