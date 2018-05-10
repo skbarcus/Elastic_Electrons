@@ -29,10 +29,12 @@ Double_t fitmin = 2.3, fitmax = 3.7;
 //Double_t ymin = -0.028, ymax = 0.028;
 Double_t ymin = -0.03, ymax = 0.03;      //I think this should be changed to a L.tr.vz cut instead.
 Double_t thmin = -0.04, thmax = 0.055;
-Double_t phmin = -0.03, phmax = 0.03;
+Double_t phmin = -0.0, phmax = 0.03;
+Double_t dpmin = -0.03, dpmax = 0.03;
 Double_t ymin_SIMC = ymin*100., ymax_SIMC = ymax*100.;
 Double_t thmin_SIMC = TMath::ATan(thmin), thmax_SIMC = TMath::ATan(thmax);
 Double_t phmin_SIMC = TMath::ATan(phmin), phmax_SIMC = TMath::ATan(phmax);
+Double_t dpmin_SIMC = dpmin*100., dpmax_SIMC = dpmax*100.;
 
 void Xbj_Beam_Cuts_Al_Sub_SIMC() 
 {
@@ -187,13 +189,14 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
       T->SetBranchStatus("L.prl2.e",1);
       T->SetBranchStatus("L.tr.tg_th",1);
       T->SetBranchStatus("L.tr.tg_ph",1);
+      T->SetBranchStatus("L.tr.tg_dp",1);
       //T->SetBranchStatus("L.tr.p",1);
       T->SetBranchStatus("DBB.evtypebits",1);
       T->SetBranchStatus("right_bcm_u1c",1);
       T->SetBranchStatus("right_bcm_d1c",1);
       T->SetBranchStatus("right_clkcount",1);
       
-      Double_t x_bj=0.,Ext_x_bj=0.,L_tr_tg_y[21],L_tg_th[21],L_tg_ph[21],L_cer=0.,L_prl1_e=0.,L_prl2_e=0.,L_tr_p=0.,L_tr_n=0.,evtypebits;
+      Double_t x_bj=0.,Ext_x_bj=0.,L_tr_tg_y[21],L_tg_th[21],L_tg_ph[21],L_tg_dp[21],L_cer=0.,L_prl1_e=0.,L_prl2_e=0.,L_tr_p=0.,L_tr_n=0.,evtypebits;
       Double_t u1c=0.,d1c=0.,rclk=0.;
       
       T->SetBranchAddress("EKL.x_bj",&x_bj);
@@ -205,6 +208,7 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
       T->SetBranchAddress("L.prl2.e",&L_prl2_e);
       T->SetBranchAddress("L.tr.tg_th",L_tg_th);
       T->SetBranchAddress("L.tr.tg_ph",L_tg_ph);
+      T->SetBranchAddress("L.tr.tg_ph",L_tg_dp);
       //T->SetBranchAddress("L.tr.p",L_tr_p);
       T->SetBranchAddress("DBB.evtypebits",&evtypebits);
       T->SetBranchAddress("right_bcm_u1c",&u1c);
@@ -265,7 +269,7 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
 	  //if(L_tr_tg_y[0]>ymin && L_tr_tg_y[0]<ymax && L_tr_n==1 && (evtypebits&1<<3)==1<<3 && L_prl1_e>(-L_prl2_e+2000) && L_tg_th[0]>thmin && L_tg_th[0]<thmax) 
 	  //if(L_tr_tg_y[0]>ymin && L_tr_tg_y[0]<ymax && L_tr_n==1 && (evtypebits&1<<3)==1<<3 && L_prl1_e>(-L_prl2_e+2000) && L_tg_ph[0]>phmin && L_tg_ph[0]<phmax)
 	  //Various cuts.
-	  if(L_tr_tg_y[0]>ymin && L_tr_tg_y[0]<ymax && L_tr_n==1 && (evtypebits&1<<3)==1<<3 && L_prl1_e>(-L_prl2_e+2000) && L_tg_ph[0]>phmin && L_tg_ph[0]<phmax && L_tg_th[0]>thmin && L_tg_th[0]<thmax)
+	  if(L_tr_tg_y[0]>ymin && L_tr_tg_y[0]<ymax && L_tr_n==1 && (evtypebits&1<<3)==1<<3 && L_prl1_e>(-L_prl2_e+2000) && L_tg_ph[0]>phmin && L_tg_ph[0]<phmax && L_tg_th[0]>thmin && L_tg_th[0]<thmax && L_tg_dp[0]>dpmin && L_tg_dp[0]<dpmax)
 	    {
 	      //Beam trip cuts. Cut out BCM scaler values in the range of the beam trips.
 	      if((u1c>=rising_u1[0]&&u1c<=falling_u1[0])||(u1c>=rising_u1[1]&&u1c<=falling_u1[1])||(u1c>=rising_u1[2]&&u1c<=falling_u1[2])||(u1c>=rising_u1[3]&&u1c<=falling_u1[3])||(u1c>=rising_u1[4]&&u1c<=falling_u1[4])||(u1c>=rising_u1[5]&&u1c<=falling_u1[5])||(u1c>=rising_u1[6]&&u1c<=falling_u1[6])||(u1c>=rising_u1[7]&&u1c<=falling_u1[7])||(u1c>=rising_u1[8]&&u1c<=falling_u1[8])||(u1c>=rising_u1[9]&&u1c<=falling_u1[9]))
@@ -463,7 +467,7 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
   for(Int_t i=0;i<nevts_Al;i++) 
     {
       B->GetEntry(i);
-      if(L_tr_tg_y_Al[0]>ymin && L_tr_tg_y_Al[0]<ymax && L_tr_n_Al==1 && (evtypebits_Al&1<<3)==1<<3 && L_prl1_e_Al>(-L_prl2_e_Al+2000) && L_tg_ph_Al[0]>phmin && L_tg_ph_Al[0]<phmax && L_tg_th_Al[0]>thmin && L_tg_th_Al[0]<thmax)
+      if(L_tr_tg_y_Al[0]>ymin && L_tr_tg_y_Al[0]<ymax && L_tr_n_Al==1 && (evtypebits_Al&1<<3)==1<<3 && L_prl1_e_Al>(-L_prl2_e_Al+2000) && L_tg_ph_Al[0]>phmin && L_tg_ph_Al[0]<phmax && L_tg_th_Al[0]>thmin && L_tg_th_Al[0]<thmax && L_tg_dp[0]>dpmin && L_tg_dp[0]<dpmax)
 	{
 	  hAl->Fill(Ext_x_bj_Al);
 	  nevts_cuts_Al++;
@@ -486,17 +490,18 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
   //Also read in SIMC elastic results to compare to the experimental elastic peak.
   
   TChain *SIMC = new TChain("h666");
-  SIMC->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic.root");
+  SIMC->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70.root");
   SIMC->SetBranchStatus("*",0);
   SIMC->SetBranchStatus("xbj",1);
   SIMC->SetBranchStatus("ssytar",1);
   SIMC->SetBranchStatus("ssyptar",1);
   SIMC->SetBranchStatus("ssxptar",1);
+  SIMC->SetBranchStatus("ssdelta",1);
   SIMC->SetBranchStatus("Weight",1);
 
   TH1D *hSIMC = new TH1D("hSIMC","SIMC Xbj" , xb_nbins, xbmin, xbmax);
   hSIMC->SetLineColor(kBlack);
-  SIMC->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC),"same");
+  SIMC->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");
   
   //Now we want to fit the background subtracted histogram and find the number of elastic electrons.
 
