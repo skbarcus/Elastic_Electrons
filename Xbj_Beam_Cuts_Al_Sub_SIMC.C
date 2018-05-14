@@ -10,6 +10,7 @@
 #include <math.h>
 //#define theta1 21.;
 Int_t use_histo_method = 1;
+Int_t show_histos = 0;
 Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Int_t runlist[1] = {4075};
 
@@ -24,6 +25,7 @@ Double_t xbmin = 0., xbmax = 4.;
 Double_t xb_binwidth = 0.;
 //Double_t xmin = 2.92, xmax = 3.15;
 Double_t xmin = 2.95, xmax = 3.10;
+Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
 //Double_t fitmin = 2.8, fitmax = 3.2;
 Double_t fitmin = 2.3, fitmax = 3.7;
 //Double_t ymin = -0.028, ymax = 0.028;
@@ -303,6 +305,21 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
     return fitval;
   }
 
+  //Create an exponential fit function to fit the background region, but exclude exponential peak and signifcant radiative tail of elastics. This fit will be binned to a hist and then added to the SIMC result to match experimental result.
+  Double_t fit_exp_no_elastics(Double_t *x,Double_t *par) 
+  {
+    Bool_t reject;
+    reject = kTRUE;
+    //reject = kFALSE;
+    if (reject && x[0] > xmin_no_elastics && x[0] < xmax_no_elastics) 
+      {
+	TF1::RejectPoint();
+	return 0;
+      }
+    Double_t fitval = TMath::Exp(par[0]+par[1]*x[0]);
+    return fitval;
+  }
+
   //Create Gaussian fit for the elastic peak.
   Double_t fit_gaus(Double_t *x,Double_t *par) 
   {
@@ -501,8 +518,15 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
 
   TH1D *hSIMC = new TH1D("hSIMC","SIMC Xbj" , xb_nbins, xbmin, xbmax);
   hSIMC->SetLineColor(kBlack);
-  SIMC->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");
-  
+  if(show_histos==1)
+    {
+      SIMC->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");
+    }
+  else //Won't draw the histogram on the canvas but will still fill it.
+    {
+      SIMC->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"");
+      hSIMC->Add(hSIMC,2.);
+    }
   //Now we want to fit the background subtracted histogram and find the number of elastic electrons.
 
   //Fit the histogram excluding the elastic peak.
@@ -539,7 +563,7 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
 
   //Plot the full exponential fit including the elstic peak if it was skipped over.
   TF1 *func_exp_full_Al = new TF1("fit_exp_full_Al",fit_exp_full,fitmin,fitmax,2);
-  if(use_histo_method==1)
+  if(use_histo_method==1)//This is immediately overwritten by the next line. Remove?
     {
       func_exp_full_Al->SetParameter(0,func_exp_Al->GetParameter(0));
       func_exp_full_Al->SetParameter(1,func_exp_Al->GetParameter(1));
@@ -558,6 +582,57 @@ void Xbj_Beam_Cuts_Al_Sub_SIMC()
   func_gaus_Al->SetParameter(2,func_total_Al->GetParameter(4));
   //func_gaus_Al->Draw("same");
 
+  //Fit the exponential background without the elastic peak or main radiative tail to be summed with SIMC elastic results.
+  TF1 *func_exp_Al_no_elastics = new TF1("func_exp_Al_no_elastics",fit_exp_no_elastics,fitmin,fitmax,2);
+  func_exp_Al_no_elastics->SetLineColor(1);
+  func_exp_Al_no_elastics->SetParameter(0,12.);
+  func_exp_Al_no_elastics->SetParameter(1,-3.);
+  htot->Fit("func_exp_Al_no_elastics","R M");
+  cout<<"***** Exponential Fit Al Sub No Elastics: Chi^2 = "<<func_exp_Al_no_elastics->GetChisquare()<<"   nDOF = "<<func_exp_Al_no_elastics->GetNDF()<<"   Fit Probablility = "<<func_exp_Al_no_elastics->GetProb()<<" *****"<<endl;
+  //Draw the total combined fit again for comparison.
+  func_total->Draw("same");
+
+  //Bin a histogram to the no elastics exponential fit that can be added to the SIMC elastic data to match the experimental result.
+  TAxis *axis = htot->GetXaxis();
+  Int_t bmin_no_elastics = axis->FindBin(fitmin); 
+  Int_t bmax_no_elastics = axis->FindBin(fitmax);
+  Double_t nbins_no_elastics = bmax_no_elastics-bmin_no_elastics;
+  Double_t bin_width_no_elastics = (xmax_no_elastics-xmin_no_elastics)/nbins_no_elastics;
+  cout<<"*********************************************"<<endl;
+  cout<<"bmin_no_elastics = "<<bmin_no_elastics<<"   bmax_no_elastics = "<<bmax_no_elastics<<"   nbins_no_elastics = "<<nbins_no_elastics<<"   bin_width_no_elastics = "<<bin_width_no_elastics<<endl;
+  TH1D *h_no_elastics = new TH1D("h_no_elastics","Fit Background No Elastics" , xb_nbins, xbmin, xbmax);
+
+  //Remap the exponential fit skipping over a region to a full exponential for binning a histogram to the excluded region.
+  TF1 *func_exp_full_Al_no_elastics = new TF1("fit_exp_full_Al_no_elastics",fit_exp_full,fitmin,fitmax,2);
+  func_exp_full_Al_no_elastics->SetParameter(0,func_exp_Al_no_elastics->GetParameter(0));
+  func_exp_full_Al_no_elastics->SetParameter(1,func_exp_Al_no_elastics->GetParameter(1));
+
+  //Fill the fit histogram.
+  for(Int_t i=0;i<xb_nbins;i++)
+    {
+      //cout<<"xbj = "<<htot->GetXaxis()->GetBinCenter(i)<<endl;
+      if(i>bmin_no_elastics && i<bmax_no_elastics)
+	{
+	  h_no_elastics->SetBinContent(i, func_exp_full_Al_no_elastics->Eval( htot->GetXaxis()->GetBinCenter(i) ) );
+	}
+      else
+	{
+	  h_no_elastics->SetBinContent(i,0);
+	}
+    }
+  if(show_histos==1)
+    {
+      h_no_elastics->Draw("same");
+    }
+  h_no_elastics->SetLineColor(1);
+
+  //Now plot the sum of the SIMC results and the Al subtracted background so that it can be compared to the experimental data.
+  TH1D *h_summed_SIMC = new TH1D("h_summed_SIMC","Fit Background No Elastics Summed with SIMC Elastic Results" , xb_nbins, xbmin, xbmax);
+  h_summed_SIMC->Add(hSIMC,h_no_elastics,1.,1.);
+  h_summed_SIMC->Draw("same");
+  h_summed_SIMC->SetLineColor(6);
+  
+  //Calculate number of elactrons with the histgram method.
   if(use_histo_method==1)
     {
   //Create another histogram with the same bin sizes in the region of the elastic peak with the same bin widths as the Xbj histo. This new histo can then be integrated and compare with the Xbj histogram.
