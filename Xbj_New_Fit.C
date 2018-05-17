@@ -27,7 +27,7 @@ Double_t xb_binwidth = 0.;
 Double_t xmin = 2.95, xmax = 3.10;
 Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
 //Double_t fitmin = 2.8, fitmax = 3.2;
-Double_t fitmin = 2.3, fitmax = 3.7;
+Double_t fitmin = 2.3, fitmax = 4.;
 //Double_t ymin = -0.028, ymax = 0.028;
 Double_t ymin = -0.03, ymax = 0.03;      //I think this should be changed to a L.tr.vz cut instead.
 Double_t thmin = -0.04, thmax = 0.055;
@@ -305,6 +305,28 @@ void Xbj_New_Fit()
     return fitval;
   }
 
+  //Create an exponential fit function that skips a region.
+  Double_t fit_exp_skip(Double_t *x,Double_t *par) 
+  {
+    Bool_t reject;
+    reject = kTRUE;
+    //reject = kFALSE;
+    if (reject && x[0] > 3.3 && x[0] < 3.4) 
+      {
+	TF1::RejectPoint();
+	return 0;
+      }
+    /*
+    if (reject && x[0] > xmin && x[0] < xmax) 
+      {
+	TF1::RejectPoint();
+	return 0;
+      }
+    */
+    Double_t fitval = TMath::Exp(par[0]+par[1]*x[0]);
+    return fitval;
+  }
+
   //Create an exponential fit function to fit the background region, but exclude exponential peak and signifcant radiative tail of elastics. This fit will be binned to a hist and then added to the SIMC result to match experimental result.
   Double_t fit_exp_no_elastics(Double_t *x,Double_t *par) 
   {
@@ -334,11 +356,40 @@ void Xbj_New_Fit()
     return fit_exp(x,par) + fit_gaus(x,&par[2]);
   }
 
+  //Create a function for fitting lines.
+  Double_t fit_line(Double_t *x,Double_t *par) 
+  {
+    Bool_t reject;
+    reject = kTRUE;
+    //reject = kFALSE;
+    if (reject && x[0] > 3.3 && x[0] < 3.4) 
+      {
+	TF1::RejectPoint();
+	return 0;
+      }
+    return par[0]+par[1]*x[0];
+  }
+
+  //Create a function for fitting quadratic.
+  Double_t fit_quad(Double_t *x,Double_t *par) 
+  {
+    Bool_t reject;
+    reject = kTRUE;
+    //reject = kFALSE;
+    if (reject && x[0] > 3.3 && x[0] < 3.4) 
+      {
+	TF1::RejectPoint();
+	return 0;
+      }
+    return par[0]+par[1]*x[0]+par[2]*pow(x[0],2);
+  }
+
   //Create a function that is the sum of two exponentials (one before the elastic peak and one after it) and a Gaussian for the elastic peak.
   Double_t fit_total_new(Double_t *x,Double_t *par) 
   {
+    return pow(TMath::Exp(par[0]+par[1]*x[0]),2) + fit_exp(x,&par[2]) + fit_gaus(x,&par[4]);
     //return TMath::Exp(par[0]+par[1]*x[0]) + TMath::Exp(par[2]+par[3]*x[0]) + fit_gaus(x,&par[4]);
-    return fit_exp(x,par) + fit_exp(x,&par[2]) + fit_gaus(x,&par[4]);
+    //return fit_exp(x,par) + fit_exp(x,&par[2]) + fit_gaus(x,&par[4]);
   }
 
   //Create a function that draws the full fit including over the elastic peak region.
@@ -411,10 +462,23 @@ void Xbj_New_Fit()
   func_total_new->SetParameter(4,func_gaus->GetParameter(0));
   func_total_new->SetParameter(5,func_gaus->GetParameter(1));
   func_total_new->SetParameter(6,func_gaus->GetParameter(2));
+  //func_total_new->SetParLimits(4,func_gaus->GetParameter(0)-1,func_exp_after->GetParameter(0)+1);
+  //func_total_new->SetParLimits(2,func_exp_after->GetParameter(0)-0.01,func_exp_after->GetParameter(0)+0.01);
+  //func_total_new->SetParLimits(3,func_exp_after->GetParameter(1)-0.01,func_exp_after->GetParameter(1)+0.01);
   gStyle->SetOptFit(1111);
   h1->Fit("func_total_new","R M 0");
   func_total_new->Draw("same");
 
+  /*
+  func_exp_before->SetParameter(0,func_total_new->GetParameter(0));
+  func_exp_before->SetParameter(1,func_total_new->GetParameter(1));
+  func_exp_before->SetLineColor(5);
+  func_exp_before->Draw("same");
+  func_exp_after->SetParameter(0,func_total_new->GetParameter(2));
+  func_exp_after->SetParameter(1,func_total_new->GetParameter(3));
+  func_exp_after->SetLineColor(5);
+  func_exp_after->Draw("same");
+  */
   
   //Plot the full exponential fit including the elstic peak if it was skipped over.
   TF1 *func_exp_full = new TF1("fit_exp_full",fit_exp_full,fitmin,fitmax,2);
@@ -601,8 +665,75 @@ void Xbj_New_Fit()
   func_total_Al->SetParameter(3,func_gaus->GetParameter(1));
   func_total_Al->SetParameter(4,func_gaus->GetParameter(2));
   gStyle->SetOptFit(1111);
-  htot->Fit("func_total_Al","R SAME M");
+  htot->Fit("func_total_Al","R same M");
   cout<<"***** Combined Fit: Chi^2 = "<<func_total_Al->GetChisquare()<<"   nDOF = "<<func_total_Al->GetNDF()<<"   Fit Probablility = "<<func_total_Al->GetProb()<<" *****"<<endl;
+  //Draw the total combined fit.
+  func_total_Al->Draw("same");
+
+  /*
+  cout<<"*****Fit of line after elastic peak with Al subtracted*****"<<endl;
+  TF1 *func_line_Al_after = new TF1("func_line_Al_after",fit_line,xmax,fitmax,2);
+  func_line_Al_after->SetLineColor(3);
+  func_line_Al_after->SetParameter(0,40.);
+  func_line_Al_after->SetParameter(1,-10.);
+  htot->Fit("func_line_Al_after","R M 0");
+  func_line_Al_after->Draw("same");
+
+  cout<<"*****Fit of quadratic after elastic peak with Al subtracted*****"<<endl;
+  TF1 *func_quad_Al_after = new TF1("func_quad_Al_after",fit_quad,xmax,xbmax,3);
+  func_quad_Al_after->SetLineColor(3);
+  func_quad_Al_after->SetParameter(0,24.);
+  func_quad_Al_after->SetParameter(1,-10.);
+  func_quad_Al_after->SetParameter(2,1.);
+  htot->Fit("func_quad_Al_after","R M 0");
+  func_quad_Al_after->Draw("same");
+  */
+  
+  //Fit with an exponential before and after the elastic peak plus a Gaussian for the peak.
+  cout<<"*****Fit of exponential before elastic peak with Al subtracted*****"<<endl;
+  //Fit the two exponentials and the Gaussian function to their respective regions.
+  TF1 *func_exp_Al_before = new TF1("func_exp_Al_before",fit_exp,fitmin,xmin,2);
+  func_exp_Al_before->SetLineColor(3);
+  func_exp_Al_before->SetParameter(0,12.);
+  func_exp_Al_before->SetParameter(1,-3.);
+  htot->Fit("func_exp_Al_before","R M 0");
+  func_exp_Al_before->Draw("same");
+  
+  cout<<"*****Fit of exponential after elastic peak with Al subtracted*****"<<endl;
+  TF1 *func_exp_Al_after = new TF1("func_exp_Al_after",fit_exp_skip,xmax,xbmax,2);
+  func_exp_Al_after->SetLineColor(3);
+  func_exp_Al_after->SetParameter(0,12.);
+  func_exp_Al_after->SetParameter(1,-3.);
+  htot->Fit("func_exp_Al_after","R M 0");
+  func_exp_Al_after->Draw("same");
+  
+  
+  //Fit the combined background exponential and Gaussian elastic peak.
+  TF1 *func_total_Al_new = new TF1("func_total_Al_new",fit_total_new,fitmin,fitmax,7);
+  func_total_Al_new->SetLineColor(4);
+  func_total_Al_new->SetNpx(1000);
+  func_total_Al_new->SetParameter(0,func_exp_Al_before->GetParameter(0));
+  func_total_Al_new->SetParameter(1,func_exp_Al_before->GetParameter(1));
+  func_total_Al_new->SetParameter(2,func_exp_Al_after->GetParameter(0));
+  func_total_Al_new->SetParameter(3,func_exp_Al_after->GetParameter(1));
+  func_total_Al_new->SetParameter(4,func_gaus_Al->GetParameter(0));
+  func_total_Al_new->SetParameter(5,func_gaus_Al->GetParameter(1));
+  func_total_Al_new->SetParameter(6,func_gaus_Al->GetParameter(2));
+  func_total_Al_new->SetParLimits(4,func_gaus_Al->GetParameter(0)-50.,func_gaus_Al->GetParameter(0)+50.);
+  func_total_Al_new->SetParLimits(5,func_gaus_Al->GetParameter(1)-1.,func_gaus_Al->GetParameter(1)+1.);
+  func_total_Al_new->SetParLimits(6,func_gaus_Al->GetParameter(2)-0.05,func_gaus_Al->GetParameter(2)+0.05);
+  //func_total_Al_new->SetParLimits(2,func_line_Al_after->GetParameter(0)-0.0,func_line_Al_after->GetParameter(0)+0.0);
+  //func_total_Al_new->SetParLimits(3,func_line_Al_after->GetParameter(1)-0.0,func_line_Al_after->GetParameter(1)+0.0);
+  func_total_Al_new->SetParLimits(0,func_exp_Al_before->GetParameter(0)-10.0,func_exp_Al_before->GetParameter(0)+10.0);
+  func_total_Al_new->SetParLimits(1,func_exp_Al_before->GetParameter(1)-3.0,func_exp_Al_before->GetParameter(1)+3.0);
+  func_total_Al_new->SetParLimits(2,func_exp_Al_after->GetParameter(0)-0.0,func_exp_Al_after->GetParameter(0)+0.0);
+  func_total_Al_new->SetParLimits(3,func_exp_Al_after->GetParameter(1)-0.0,func_exp_Al_after->GetParameter(1)+0.0);
+  gStyle->SetOptFit(1111);
+  htot->Fit("func_total_Al_new","R M 0");
+  func_total_Al_new->Draw("same");
+  
+
+
 
   //Plot the full exponential fit including the elstic peak if it was skipped over.
   TF1 *func_exp_full_Al = new TF1("fit_exp_full_Al",fit_exp_full,fitmin,fitmax,2);
@@ -632,8 +763,6 @@ void Xbj_New_Fit()
   func_exp_Al_no_elastics->SetParameter(1,-3.);
   htot->Fit("func_exp_Al_no_elastics","R M");
   cout<<"***** Exponential Fit Al Sub No Elastics: Chi^2 = "<<func_exp_Al_no_elastics->GetChisquare()<<"   nDOF = "<<func_exp_Al_no_elastics->GetNDF()<<"   Fit Probablility = "<<func_exp_Al_no_elastics->GetProb()<<" *****"<<endl;
-  //Draw the total combined fit again for comparison.
-  func_total->Draw("same");
 
   //Bin a histogram to the no elastics exponential fit that can be added to the SIMC elastic data to match the experimental result.
   TAxis *axis = htot->GetXaxis();
@@ -674,6 +803,21 @@ void Xbj_New_Fit()
   h_summed_SIMC->Add(hSIMC,h_no_elastics,1.,1.);
   h_summed_SIMC->Draw("same");
   h_summed_SIMC->SetLineColor(6);
+
+  //Fit h_summed_SIMC histo with the same fit as the real data. Comparison of the magnitude of the Gaussians will allow use to calibrate the XS in the Monte Carlo.
+  cout<<"*****Fit of SIMC plus one exponential fitting background in region skipping most elastics.*****"<<endl;
+  TF1 *func_total_SIMC = new TF1("func_total_SIMC",fit_total,fitmin,fitmax,5);
+  func_total_SIMC->SetLineColor(6);
+  func_total_SIMC->SetNpx(1000);
+  func_total_SIMC->SetParameter(0,func_exp->GetParameter(0));
+  func_total_SIMC->SetParameter(1,func_exp->GetParameter(1));
+  func_total_SIMC->SetParameter(2,func_gaus->GetParameter(0));
+  func_total_SIMC->SetParameter(3,func_gaus->GetParameter(1));
+  func_total_SIMC->SetParameter(4,func_gaus->GetParameter(2));
+  h_summed_SIMC->Fit("func_total_SIMC","R same M");
+  func_total_SIMC->Draw("same");
+
+
   
   //Calculate number of elactrons with the histgram method.
   if(use_histo_method==1)
