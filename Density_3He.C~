@@ -1,0 +1,46 @@
+#include "Riostream.h"
+#include <TFile.h>
+#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TGraphErrors.h>
+#include <TTree.h>
+#include <TROOT.h>
+#include <TLegend.h>
+#include <math.h>
+
+void Density_3He() 
+{
+
+  //Read in data.
+  while (1) 
+    {
+      //Skips the first skip lines of the file. 
+      if (nlines1 < skip1)
+	{
+	  fgets(string1,1000,fp1);
+	  nlines1++;
+	}
+      //Reads the two columns of data into x and y.
+      else
+	{
+	  FILE *fp1 = fopen(Form("/home/skbarcus/Tritium/Analysis/He3/Elastic_Electrons/He3.rho",run),"r");
+
+	  Int_t skip1 = 0;                          //Gives number of lines to skip at top of data file. 
+	  Int_t nlines1 = 0;                        //Counts number of lines in the data file. 
+	  Int_t ncols1;                             //Set how many columns of data we have in the data file.
+	  char* string1[1000];                          //Variable to read lines of the data file.
+	  Float_t rising_temp_u1=0.,falling_temp_u1=0.,rising_temp_evt_u1=0.,falling_temp_evt_u1=0.;
+	  Float_t rising_u1[10]={},falling_u1[10]={},rising_evt_u1[10]={},falling_evt_u1[10]={};
+
+	  //Read in the number of columns of data in your data file. 
+	  ncols1 = fscanf(fp1,"%f %f %f %f",&rising_temp_evt_u1,&rising_temp_u1,&falling_temp_evt_u1,&falling_temp_u1);
+	  if (ncols1 < 0) break;  
+	  rising_evt_u1[nlines1-skip1] = rising_temp_evt_u1;
+	  rising_u1[nlines1-skip1] = rising_temp_u1;
+	  falling_evt_u1[nlines1-skip1] = falling_temp_evt_u1;
+	  falling_u1[nlines1-skip1] = falling_temp_u1; 
+	  nlines1++;
+	}
+    }
+}
