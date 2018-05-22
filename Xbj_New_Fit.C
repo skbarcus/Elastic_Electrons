@@ -10,7 +10,7 @@
 #include <math.h>
 //#define theta1 21.;
 Int_t use_histo_method = 1;
-Int_t show_histos = 0;
+Int_t show_histos = 1;
 Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Int_t runlist[1] = {4075};
 
@@ -37,6 +37,7 @@ Double_t ymin_SIMC = ymin*100., ymax_SIMC = ymax*100.;
 Double_t thmin_SIMC = TMath::ATan(thmin), thmax_SIMC = TMath::ATan(thmax);
 Double_t phmin_SIMC = TMath::ATan(phmin), phmax_SIMC = TMath::ATan(phmax);
 Double_t dpmin_SIMC = dpmin*100., dpmax_SIMC = dpmax*100.;
+Double_t density_cut = -0.01469; //Y target position where the density profile changes.
 
 void Xbj_New_Fit() 
 {
@@ -611,29 +612,63 @@ void Xbj_New_Fit()
   htot->Draw();
 
 
-  //Also read in SIMC elastic results to compare to the experimental elastic peak.
-  
-  TChain *SIMC = new TChain("h666");
-  SIMC->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70.root");
-  SIMC->SetBranchStatus("*",0);
-  SIMC->SetBranchStatus("xbj",1);
-  SIMC->SetBranchStatus("ssytar",1);
-  SIMC->SetBranchStatus("ssyptar",1);
-  SIMC->SetBranchStatus("ssxptar",1);
-  SIMC->SetBranchStatus("ssdelta",1);
-  SIMC->SetBranchStatus("Weight",1);
+  //Also read in SIMC elastic results to compare to the experimental elastic peak. Split into two ROOT files with different 3He densities to represent the boiling effects. Spliced together with a Y target cut.
+  //Add first SIMC ROOT file with initial density.
+  TChain *SIMC1 = new TChain("h666");
+  SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0345.root");
+  SIMC1->SetBranchStatus("*",0);
+  SIMC1->SetBranchStatus("xbj",1);
+  SIMC1->SetBranchStatus("ssytar",1);
+  SIMC1->SetBranchStatus("ssytari",1);
+  SIMC1->SetBranchStatus("ssyptar",1);
+  SIMC1->SetBranchStatus("ssxptar",1);
+  SIMC1->SetBranchStatus("ssdelta",1);
+  SIMC1->SetBranchStatus("Weight",1);
 
-  TH1D *hSIMC = new TH1D("hSIMC","SIMC Xbj" , xb_nbins, xbmin, xbmax);
-  hSIMC->SetLineColor(kBlack);
+  //Add second SIMC ROOT file with initial density.
+  TChain *SIMC2 = new TChain("h666");
+  SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0233.root");
+  SIMC2->SetBranchStatus("*",0);
+  SIMC2->SetBranchStatus("xbj",1);
+  SIMC2->SetBranchStatus("ssytar",1);
+  SIMC2->SetBranchStatus("ssytari",1);
+  SIMC2->SetBranchStatus("ssyptar",1);
+  SIMC2->SetBranchStatus("ssxptar",1);
+  SIMC2->SetBranchStatus("ssdelta",1);
+  SIMC2->SetBranchStatus("Weight",1);
+
+  //Create histo for the first density ROOT file.
+  TH1D *hSIMC1 = new TH1D("hSIMC1","SIMC First Density Xbj" , xb_nbins, xbmin, xbmax);
+  hSIMC1->SetLineColor(kBlack);
   if(show_histos==1)
     {
-      SIMC->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");
+      SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
     }
   else //Won't draw the histogram on the canvas but will still fill it.
     {
-      SIMC->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"");
-      hSIMC->Add(hSIMC,2.);
+      SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
+      hSIMC1->Add(hSIMC1,2.);
     }
+
+  //Create histo for the second density ROOT file.
+  TH1D *hSIMC2 = new TH1D("hSIMC2","SIMC Second Density Xbj" , xb_nbins, xbmin, xbmax);
+  hSIMC2->SetLineColor(kBlack);
+  if(show_histos==1)
+    {
+      SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
+    }
+  else //Won't draw the histogram on the canvas but will still fill it.
+    {
+      SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
+      hSIMC2->Add(hSIMC2,2.);
+    }
+
+  //Now sum the two different density ROOT files together.
+  TH1D *hSIMC = new TH1D("hSIMC","SIMC Combined Density Xbj" , xb_nbins, xbmin, xbmax);
+  hSIMC->SetLineColor(kBlack);
+  hSIMC->Add(hSIMC1,hSIMC2,1.,1.);
+  hSIMC->Draw("same")
+
   //Now we want to fit the background subtracted histogram and find the number of elastic electrons.
 
   //Fit the histogram excluding the elastic peak.
@@ -817,9 +852,22 @@ void Xbj_New_Fit()
   h_summed_SIMC->Fit("func_total_SIMC","R same M");
   func_total_SIMC->Draw("same");
 
+  //Calculate number of elactrons in elastic peak region for various fits.
+  //Set exponential function to the exponential from func_total_Al.
+  func_exp->SetParameter(0,func_total_Al->GetParameter(0));
+  func_exp->SetParameter(1,func_total_Al->GetParameter(1));
+  cout<<"********************************"<<endl;
+  cout<<"********************************"<<endl;
+  cout<<"The beginning of the elastic peak is bin "<<bmin<<" and the end of the elastic peak is "<<bmax<<"."<<endl;
+  //Number of electrons in peak region based on func_total_Al which uses fit_total (one exponetial and a Gaussian).
+  cout<<"The number of counts under the exponential background fit after the peak extrapolated back in to the peak region is "<<func_exp_Al_after->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"The number of counts under the exponential fit to the total background in the combined fit is "<<func_exp->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"The total counts under the total fit is ignoring all beackgrounds is "<<func_total_Al->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"********************************"<<endl;
+  cout<<"********************************"<<endl;
 
   
-  //Calculate number of elactrons with the histgram method.
+  //Calculate number of elctrons with the histgram method.
   if(use_histo_method==1)
     {
   //Create another histogram with the same bin sizes in the region of the elastic peak with the same bin widths as the Xbj histo. This new histo can then be integrated and compare with the Xbj histogram.
