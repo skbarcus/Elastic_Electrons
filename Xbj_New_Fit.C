@@ -8,15 +8,16 @@
 #include <TROOT.h>
 #include <TLegend.h>
 #include <math.h>
+
 //#define theta1 21.;
 Int_t use_histo_method = 1;
 Int_t show_histos = 1;
 Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Int_t runlist[1] = {4075};
-
-Double_t Normfac = 0.242967e10;
-Int_t nevts_SIMC = 50000;
-
+  
+Double_t Normfac1 = 0.278306e10, Normfac2 = 0.188633e10;
+Int_t nevts_SIMC = 100000;
+  
 Double_t charge = 21.2708;     //Scale the Al background to the charge of the production runs.
 Double_t thickness = 0.1979;   //Scale the Al background down to the thickness of 3He cell.
 Double_t rc_dummy = 1./0.548506, rc_walls = 1./0.681787;  //Scale Al background by the RC for dummy and 3He cells.
@@ -27,11 +28,11 @@ Double_t xb_binwidth = 0.;
 Double_t xmin = 2.95, xmax = 3.10;
 Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
 //Double_t fitmin = 2.8, fitmax = 3.2;
-Double_t fitmin = 2.3, fitmax = 4.;
+Double_t fitmin = 2.3, fitmax = 3.15;
 //Double_t ymin = -0.028, ymax = 0.028;
 Double_t ymin = -0.03, ymax = 0.03;      //I think this should be changed to a L.tr.vz cut instead.
 Double_t thmin = -0.04, thmax = 0.055;
-Double_t phmin = -0.0, phmax = 0.03;
+Double_t phmin = -0.03, phmax = 0.03;
 Double_t dpmin = -0.03, dpmax = 0.03;
 Double_t ymin_SIMC = ymin*100., ymax_SIMC = ymax*100.;
 Double_t thmin_SIMC = TMath::ATan(thmin), thmax_SIMC = TMath::ATan(thmax);
@@ -44,8 +45,11 @@ void Xbj_New_Fit()
   //Define a new stopwatch.
   TStopwatch *st=new TStopwatch();
   st->Start(kTRUE);
-
+  
   TH1D *h1 = new TH1D("h1","Xbj" , xb_nbins, xbmin, xbmax);
+  TCanvas* c1=new TCanvas("c1");
+  c1->SetGrid();
+  c1->SetLogy();
 
   for(Int_t m=0;m<6;m++)
     {
@@ -122,7 +126,7 @@ void Xbj_New_Fit()
 	      fgets(string1,1000,fp1);
 	      nlines1++;
 	    }
-	//Reads the two columns of data into x and y.
+	  //Reads the two columns of data into x and y.
 	  else
 	    {
 	      //Read in the number of columns of data in your data file. 
@@ -145,7 +149,7 @@ void Xbj_New_Fit()
 	      fgets(string2,1000,fp2);
 	      nlines2++;
 	    }
-	//Reads the two columns of data into x and y.
+	  //Reads the two columns of data into x and y.
 	  else
 	    {
 	      //Read in the number of columns of data in your data file. 
@@ -173,13 +177,13 @@ void Xbj_New_Fit()
 	}
       
       /*
-      TChain *T = new TChain("T");
-      T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_3892.root");
-      T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_3893.root");
-      T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_3894.root");
-      T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_4073.root");
-      T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_4074*.root");
-      T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_4075*.root");
+	TChain *T = new TChain("T");
+	T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_3892.root");
+	T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_3893.root");
+	T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_3894.root");
+	T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_4073.root");
+	T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_4074*.root");
+	T->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/e08014_4075*.root");
       */
       
       T->SetBranchStatus("*",0);
@@ -211,7 +215,7 @@ void Xbj_New_Fit()
       T->SetBranchAddress("L.prl2.e",&L_prl2_e);
       T->SetBranchAddress("L.tr.tg_th",L_tg_th);
       T->SetBranchAddress("L.tr.tg_ph",L_tg_ph);
-      T->SetBranchAddress("L.tr.tg_ph",L_tg_dp);
+      T->SetBranchAddress("L.tr.tg_dp",L_tg_dp);
       //T->SetBranchAddress("L.tr.p",L_tr_p);
       T->SetBranchAddress("DBB.evtypebits",&evtypebits);
       T->SetBranchAddress("right_bcm_u1c",&u1c);
@@ -226,16 +230,12 @@ void Xbj_New_Fit()
       
       //Print u1c entries.
       /*
-      for(Int_t i=0;i<100;i++)
+	for(Int_t i=0;i<100;i++)
 	{
-	  T->GetEntry(i);
-	  cout<<"u1c = "<<u1c<<endl;
+	T->GetEntry(i);
+	cout<<"u1c = "<<u1c<<endl;
 	}
       */
-
-      TCanvas* c1=new TCanvas("c1");
-      c1->SetGrid();
-      c1->SetLogy();
       
       //T->Draw("EKL.x_bj>>h2(1000,0.5,3.5)","L.cer.asum_c>60 && (L.prl1.e+L.prl2.e)/L.tr.p/1000>0.7 && L.tr.tg_y>-0.028 && L.tr.tg_y<0.028 && L.tr.n==1 && (DBB.evtypebits>>3)&1");
       
@@ -287,7 +287,6 @@ void Xbj_New_Fit()
 
   gStyle->SetOptStat(0);
   h1->Draw();
-  c1->Update();
   //cout<<"# evt_136 = "<<evt_136<<endl;
   //cout<<"# evt_8 = "<<evt_8<<endl;
 
@@ -318,10 +317,10 @@ void Xbj_New_Fit()
 	return 0;
       }
     /*
-    if (reject && x[0] > xmin && x[0] < xmax) 
+      if (reject && x[0] > xmin && x[0] < xmax) 
       {
-	TF1::RejectPoint();
-	return 0;
+      TF1::RejectPoint();
+      return 0;
       }
     */
     Double_t fitval = TMath::Exp(par[0]+par[1]*x[0]);
@@ -331,6 +330,7 @@ void Xbj_New_Fit()
   //Create an exponential fit function to fit the background region, but exclude exponential peak and signifcant radiative tail of elastics. This fit will be binned to a hist and then added to the SIMC result to match experimental result.
   Double_t fit_exp_no_elastics(Double_t *x,Double_t *par) 
   {
+    //Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
     Bool_t reject;
     reject = kTRUE;
     //reject = kFALSE;
@@ -399,7 +399,7 @@ void Xbj_New_Fit()
     Double_t fitval = TMath::Exp(par[0]+par[1]*x[0]);
     return fitval;
   }
-
+  /*
   //Fit the histogram excluding the elastic peak.
   TF1 *func_exp = new TF1("func_exp",fit_exp,fitmin,fitmax,2);
   func_exp->SetLineColor(1);
@@ -407,7 +407,7 @@ void Xbj_New_Fit()
   func_exp->SetParameter(1,-3.);
   h1->Fit("func_exp","R 0 M");
   cout<<"***** Exponential Fit: Chi^2 = "<<func_exp->GetChisquare()<<"   nDOF = "<<func_exp->GetNDF()<<"   Fit Probablility = "<<func_exp->GetProb()<<" *****"<<endl;
-
+  
   //Fit the Gaussian to the elastic peak.
   TF1 *func_gaus = new TF1("func_gaus",fit_gaus,xmin,xmax,3);
   func_gaus->SetLineColor(3);
@@ -434,7 +434,8 @@ void Xbj_New_Fit()
   func_total->SetLineWidth(6);
   func_total->Draw("same");
   cout<<"***** Combined Fit: Chi^2 = "<<func_total->GetChisquare()<<"   nDOF = "<<func_total->GetNDF()<<"   Fit Probablility = "<<func_total->GetProb()<<" *****"<<endl;
-  
+  */
+  /*
   cout<<"*****Fit of exponential before elastic Peak*****"<<endl;
   //Fit the two exponentials and the Gaussian function to their respective regions.
   TF1 *func_exp_before = new TF1("func_exp_before",fit_exp,fitmin,xmin,2);
@@ -452,6 +453,7 @@ void Xbj_New_Fit()
   h1->Fit("func_exp_after","R M 0");
   func_exp_after->Draw("same");
 
+  
   //Fit the combined background exponential and Gaussian elastic peak.
   TF1 *func_total_new = new TF1("func_total_new",fit_total_new,fitmin,fitmax,7);
   func_total_new->SetLineColor(6);
@@ -469,18 +471,19 @@ void Xbj_New_Fit()
   gStyle->SetOptFit(1111);
   h1->Fit("func_total_new","R M 0");
   func_total_new->Draw("same");
+  */
 
   /*
-  func_exp_before->SetParameter(0,func_total_new->GetParameter(0));
-  func_exp_before->SetParameter(1,func_total_new->GetParameter(1));
-  func_exp_before->SetLineColor(5);
-  func_exp_before->Draw("same");
-  func_exp_after->SetParameter(0,func_total_new->GetParameter(2));
-  func_exp_after->SetParameter(1,func_total_new->GetParameter(3));
-  func_exp_after->SetLineColor(5);
-  func_exp_after->Draw("same");
+    func_exp_before->SetParameter(0,func_total_new->GetParameter(0));
+    func_exp_before->SetParameter(1,func_total_new->GetParameter(1));
+    func_exp_before->SetLineColor(5);
+    func_exp_before->Draw("same");
+    func_exp_after->SetParameter(0,func_total_new->GetParameter(2));
+    func_exp_after->SetParameter(1,func_total_new->GetParameter(3));
+    func_exp_after->SetLineColor(5);
+    func_exp_after->Draw("same");
   */
-  
+  /*
   //Plot the full exponential fit including the elstic peak if it was skipped over.
   TF1 *func_exp_full = new TF1("fit_exp_full",fit_exp_full,fitmin,fitmax,2);
   if(use_histo_method==1)
@@ -501,19 +504,20 @@ void Xbj_New_Fit()
   func_gaus->SetParameter(1,func_total->GetParameter(3));
   func_gaus->SetParameter(2,func_total->GetParameter(4));
   //func_gaus->Draw("same");
-
+*/
+  /*
   if(use_histo_method==1)
     {
-  //Create another histogram with the same bin sizes in the region of the elastic peak with the same bin widths as the Xbj histo. This new histo can then be integrated and compare with the Xbj histogram.
-  //Calculate bin width in the region of the elastic peak.
-  TAxis *axis = h1->GetXaxis();
-  Int_t bmin = axis->FindBin(xmin); 
-  Int_t bmax = axis->FindBin(xmax);
-  Double_t nbins = bmax-bmin;
-  Double_t bin_width = (xmax-xmin)/nbins;
-  cout<<"*********************************************"<<endl;
-  cout<<"bmin = "<<bmin<<"   bmax = "<<bmax<<"   nbins = "<<nbins<<"   bin_width = "<<bin_width<<endl;
-  TH1D *h2 = new TH1D("h2","Fit Xbj" , nbins, xmin, xmax);
+      //Create another histogram with the same bin sizes in the region of the elastic peak with the same bin widths as the Xbj histo. This new histo can then be integrated and compare with the Xbj histogram.
+      //Calculate bin width in the region of the elastic peak.
+      TAxis *axis = h1->GetXaxis();
+      Int_t bmin = axis->FindBin(xmin); 
+      Int_t bmax = axis->FindBin(xmax);
+      Double_t nbins = bmax-bmin;
+      Double_t bin_width = (xmax-xmin)/nbins;
+      cout<<"*********************************************"<<endl;
+      cout<<"bmin = "<<bmin<<"   bmax = "<<bmax<<"   nbins = "<<nbins<<"   bin_width = "<<bin_width<<endl;
+      TH1D *h2 = new TH1D("h2","Fit Xbj" , nbins, xmin, xmax);
 
       //Fill the fit histogram.
       for(Int_t i=0;i<nbins;i++)
@@ -537,7 +541,7 @@ void Xbj_New_Fit()
   xb_binwidth = xb_nbins/(xbmax-xbmin);
   cout<<"xb_binwidth = "<<xb_binwidth<<endl;
   cout<<"There are "<<func_gaus->Integral(xmin,xmax)*xb_binwidth<<" elastic electrons in this fit."<<endl;
-
+*/
 
 
 
@@ -555,13 +559,14 @@ void Xbj_New_Fit()
   B->SetBranchStatus("L.prl2.e",1);
   B->SetBranchStatus("L.tr.tg_th",1);
   B->SetBranchStatus("L.tr.tg_ph",1);
+  B->SetBranchStatus("L.tr.tg_dp",1);
   //B->SetBranchStatus("L.tr.p",1);
   B->SetBranchStatus("DBB.evtypebits",1);
   B->SetBranchStatus("right_bcm_u1c",1);
   B->SetBranchStatus("right_bcm_d1c",1);
   B->SetBranchStatus("right_clkcount",1);
 
-  Double_t x_bj_Al=0.,Ext_x_bj_Al=0.,L_tr_tg_y_Al[21],L_tg_th_Al[21],L_tg_ph_Al[21],L_cer_Al=0.,L_prl1_e_Al=0.,L_prl2_e_Al=0.,L_tr_p_Al=0.,L_tr_n_Al=0.,evtypebits_Al;
+  Double_t x_bj_Al=0.,Ext_x_bj_Al=0.,L_tr_tg_y_Al[21],L_tg_th_Al[21],L_tg_ph_Al[21],L_tg_dp_Al[21],L_cer_Al=0.,L_prl1_e_Al=0.,L_prl2_e_Al=0.,L_tr_p_Al=0.,L_tr_n_Al=0.,evtypebits_Al;
   Double_t u1c_Al=0.,d1c_Al=0.,rclk_Al=0.;
       
   B->SetBranchAddress("EKL.x_bj",&x_bj_Al);
@@ -573,6 +578,7 @@ void Xbj_New_Fit()
   B->SetBranchAddress("L.prl2.e",&L_prl2_e_Al);
   B->SetBranchAddress("L.tr.tg_th",L_tg_th_Al);
   B->SetBranchAddress("L.tr.tg_ph",L_tg_ph_Al);
+  B->SetBranchAddress("L.tr.tg_dp",L_tg_dp_Al);
   //B->SetBranchAddress("L.tr.p",L_tr_p_Al);
   B->SetBranchAddress("DBB.evtypebits",&evtypebits_Al);
   B->SetBranchAddress("right_bcm_u1c",&u1c_Al);
@@ -592,7 +598,7 @@ void Xbj_New_Fit()
   for(Int_t i=0;i<nevts_Al;i++) 
     {
       B->GetEntry(i);
-      if(L_tr_tg_y_Al[0]>ymin && L_tr_tg_y_Al[0]<ymax && L_tr_n_Al==1 && (evtypebits_Al&1<<3)==1<<3 && L_prl1_e_Al>(-L_prl2_e_Al+2000) && L_tg_ph_Al[0]>phmin && L_tg_ph_Al[0]<phmax && L_tg_th_Al[0]>thmin && L_tg_th_Al[0]<thmax && L_tg_dp[0]>dpmin && L_tg_dp[0]<dpmax)
+      if(L_tr_tg_y_Al[0]>ymin && L_tr_tg_y_Al[0]<ymax && L_tr_n_Al==1 && (evtypebits_Al&1<<3)==1<<3 && L_prl1_e_Al>(-L_prl2_e_Al+2000) && L_tg_ph_Al[0]>phmin && L_tg_ph_Al[0]<phmax && L_tg_th_Al[0]>thmin && L_tg_th_Al[0]<thmax && L_tg_dp_Al[0]>dpmin && L_tg_dp_Al[0]<dpmax)
 	{
 	  hAl->Fill(Ext_x_bj_Al);
 	  nevts_cuts_Al++;
@@ -639,35 +645,37 @@ void Xbj_New_Fit()
 
   //Create histo for the first density ROOT file.
   TH1D *hSIMC1 = new TH1D("hSIMC1","SIMC First Density Xbj" , xb_nbins, xbmin, xbmax);
-  hSIMC1->SetLineColor(kBlack);
+  hSIMC1->SetLineColor(3);
   if(show_histos==1)
     {
-      SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
+      SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
     }
   else //Won't draw the histogram on the canvas but will still fill it.
     {
-      SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
-      hSIMC1->Add(hSIMC1,2.);
+      SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
+      hSIMC1->Add(hSIMC1,1.);
     }
 
   //Create histo for the second density ROOT file.
   TH1D *hSIMC2 = new TH1D("hSIMC2","SIMC Second Density Xbj" , xb_nbins, xbmin, xbmax);
-  hSIMC2->SetLineColor(kBlack);
+  hSIMC2->SetLineColor(8);
   if(show_histos==1)
     {
-      SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
+      SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac2,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
     }
   else //Won't draw the histogram on the canvas but will still fill it.
     {
-      SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
-      hSIMC2->Add(hSIMC2,2.);
+      SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac2,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
+      hSIMC2->Add(hSIMC2,1.);
     }
+
+  cout<<"nevts hSIMC1 = "<<hSIMC1->GetEntries()<<"   nevts hSIMC2 = "<<hSIMC2->GetEntries()<<endl;
 
   //Now sum the two different density ROOT files together.
   TH1D *hSIMC = new TH1D("hSIMC","SIMC Combined Density Xbj" , xb_nbins, xbmin, xbmax);
   hSIMC->SetLineColor(kBlack);
   hSIMC->Add(hSIMC1,hSIMC2,1.,1.);
-  hSIMC->Draw("same")
+  hSIMC->Draw("same");
 
   //Now we want to fit the background subtracted histogram and find the number of elastic electrons.
 
@@ -678,6 +686,8 @@ void Xbj_New_Fit()
   func_exp_Al->SetParameter(1,-3.);
   htot->Fit("func_exp_Al","R 0 M");
   cout<<"***** Exponential Fit: Chi^2 = "<<func_exp_Al->GetChisquare()<<"   nDOF = "<<func_exp_Al->GetNDF()<<"   Fit Probablility = "<<func_exp_Al->GetProb()<<" *****"<<endl;
+  //func_exp_Al->Draw("same");
+  //func_exp_Al->SetLineColor(5);
 
   //Fit the Gaussian to the elastic peak.
   TF1 *func_gaus_Al = new TF1("func_gaus_Al",fit_gaus,xmin,xmax,3);
@@ -694,11 +704,11 @@ void Xbj_New_Fit()
   TF1 *func_total_Al = new TF1("func_total_Al",fit_total,fitmin,fitmax,5);
   func_total_Al->SetLineColor(2);
   func_total_Al->SetNpx(1000);
-  func_total_Al->SetParameter(0,func_exp->GetParameter(0));
-  func_total_Al->SetParameter(1,func_exp->GetParameter(1));
-  func_total_Al->SetParameter(2,func_gaus->GetParameter(0));
-  func_total_Al->SetParameter(3,func_gaus->GetParameter(1));
-  func_total_Al->SetParameter(4,func_gaus->GetParameter(2));
+  func_total_Al->SetParameter(0,func_exp_Al->GetParameter(0));
+  func_total_Al->SetParameter(1,func_exp_Al->GetParameter(1));
+  func_total_Al->SetParameter(2,func_gaus_Al->GetParameter(0));
+  func_total_Al->SetParameter(3,func_gaus_Al->GetParameter(1));
+  func_total_Al->SetParameter(4,func_gaus_Al->GetParameter(2));
   gStyle->SetOptFit(1111);
   htot->Fit("func_total_Al","R same M");
   cout<<"***** Combined Fit: Chi^2 = "<<func_total_Al->GetChisquare()<<"   nDOF = "<<func_total_Al->GetNDF()<<"   Fit Probablility = "<<func_total_Al->GetProb()<<" *****"<<endl;
@@ -713,17 +723,19 @@ void Xbj_New_Fit()
   func_line_Al_after->SetParameter(1,-10.);
   htot->Fit("func_line_Al_after","R M 0");
   func_line_Al_after->Draw("same");
-
-  cout<<"*****Fit of quadratic after elastic peak with Al subtracted*****"<<endl;
-  TF1 *func_quad_Al_after = new TF1("func_quad_Al_after",fit_quad,xmax,xbmax,3);
-  func_quad_Al_after->SetLineColor(3);
-  func_quad_Al_after->SetParameter(0,24.);
-  func_quad_Al_after->SetParameter(1,-10.);
-  func_quad_Al_after->SetParameter(2,1.);
-  htot->Fit("func_quad_Al_after","R M 0");
-  func_quad_Al_after->Draw("same");
+  */
+  /*
+    cout<<"*****Fit of quadratic after elastic peak with Al subtracted*****"<<endl;
+    TF1 *func_quad_Al_after = new TF1("func_quad_Al_after",fit_quad,xmax,xbmax,3);
+    func_quad_Al_after->SetLineColor(3);
+    func_quad_Al_after->SetParameter(0,24.);
+    func_quad_Al_after->SetParameter(1,-10.);
+    func_quad_Al_after->SetParameter(2,1.);
+    htot->Fit("func_quad_Al_after","R M 0");
+    func_quad_Al_after->Draw("same");
   */
   
+  /*
   //Fit with an exponential before and after the elastic peak plus a Gaussian for the peak.
   cout<<"*****Fit of exponential before elastic peak with Al subtracted*****"<<endl;
   //Fit the two exponentials and the Gaussian function to their respective regions.
@@ -766,7 +778,7 @@ void Xbj_New_Fit()
   gStyle->SetOptFit(1111);
   htot->Fit("func_total_Al_new","R M 0");
   func_total_Al_new->Draw("same");
-  
+  */
 
 
 
@@ -844,25 +856,36 @@ void Xbj_New_Fit()
   TF1 *func_total_SIMC = new TF1("func_total_SIMC",fit_total,fitmin,fitmax,5);
   func_total_SIMC->SetLineColor(6);
   func_total_SIMC->SetNpx(1000);
-  func_total_SIMC->SetParameter(0,func_exp->GetParameter(0));
-  func_total_SIMC->SetParameter(1,func_exp->GetParameter(1));
-  func_total_SIMC->SetParameter(2,func_gaus->GetParameter(0));
-  func_total_SIMC->SetParameter(3,func_gaus->GetParameter(1));
-  func_total_SIMC->SetParameter(4,func_gaus->GetParameter(2));
+  func_total_SIMC->SetParameter(0,func_exp_Al->GetParameter(0));
+  func_total_SIMC->SetParameter(1,func_exp_Al->GetParameter(1));
+  func_total_SIMC->SetParameter(2,func_gaus_Al->GetParameter(0));
+  func_total_SIMC->SetParameter(3,func_gaus_Al->GetParameter(1));
+  func_total_SIMC->SetParameter(4,func_gaus_Al->GetParameter(2));
   h_summed_SIMC->Fit("func_total_SIMC","R same M");
   func_total_SIMC->Draw("same");
+  cout<<"***** Total Fit Al Sub Summed SIMC: Chi^2 = "<<func_total_SIMC->GetChisquare()<<"   nDOF = "<<func_total_SIMC->GetNDF()<<"   Fit Probablility = "<<func_total_SIMC->GetProb()<<" *****"<<endl;
 
   //Calculate number of elactrons in elastic peak region for various fits.
   //Set exponential function to the exponential from func_total_Al.
-  func_exp->SetParameter(0,func_total_Al->GetParameter(0));
-  func_exp->SetParameter(1,func_total_Al->GetParameter(1));
+  func_exp_Al->SetParameter(0,func_total_Al->GetParameter(0));
+  func_exp_Al->SetParameter(1,func_total_Al->GetParameter(1));
+  TAxis *axis = htot->GetXaxis();
+  Int_t bmin = axis->FindBin(xmin); 
+  Int_t bmax = axis->FindBin(xmax);
+  Double_t nbins = bmax-bmin;
+  Double_t bin_width = (xmax-xmin)/nbins;
+
   cout<<"********************************"<<endl;
   cout<<"********************************"<<endl;
   cout<<"The beginning of the elastic peak is bin "<<bmin<<" and the end of the elastic peak is "<<bmax<<"."<<endl;
   //Number of electrons in peak region based on func_total_Al which uses fit_total (one exponetial and a Gaussian).
-  cout<<"The number of counts under the exponential background fit after the peak extrapolated back in to the peak region is "<<func_exp_Al_after->Integral(xmin,xmax)/bin_width<<"."<<endl;
-  cout<<"The number of counts under the exponential fit to the total background in the combined fit is "<<func_exp->Integral(xmin,xmax)/bin_width<<"."<<endl;
-  cout<<"The total counts under the total fit is ignoring all beackgrounds is "<<func_total_Al->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  //cout<<"The number of counts under the exponential background fit after the peak extrapolated back in to the peak region is "<<func_exp_Al_after->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  //cout<<"The number of counts under the linear background fit after the peak extrapolated back in to the peak region is "<<func_line_Al_after->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"The number of counts under the exponential fit to the total background in the combined fit is "<<func_exp_Al->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"The total counts under the elastic peak using the total fit of data ignoring all backgrounds is "<<func_total_Al->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"Data Gaussian: height = "<<func_total_Al->GetParameter(2)<<"   center = "<<func_total_Al->GetParameter(3)<<"   standard deviation = "<<func_total_Al->GetParameter(4)<<endl;
+  cout<<"The total counts under the elastic peak using the total fit of SIMC ignoring all backgrounds is "<<func_total_SIMC->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"SIMC Gaussian: height = "<<func_total_SIMC->GetParameter(2)<<"   center = "<<func_total_SIMC->GetParameter(3)<<"   standard deviation = "<<func_total_SIMC->GetParameter(4)<<endl;
   cout<<"********************************"<<endl;
   cout<<"********************************"<<endl;
 
@@ -870,16 +893,16 @@ void Xbj_New_Fit()
   //Calculate number of elctrons with the histgram method.
   if(use_histo_method==1)
     {
-  //Create another histogram with the same bin sizes in the region of the elastic peak with the same bin widths as the Xbj histo. This new histo can then be integrated and compare with the Xbj histogram.
-  //Calculate bin width in the region of the elastic peak.
-  TAxis *axis = htot->GetXaxis();
-  Int_t bmin = axis->FindBin(xmin); 
-  Int_t bmax = axis->FindBin(xmax);
-  Double_t nbins = bmax-bmin;
-  Double_t bin_width = (xmax-xmin)/nbins;
-  cout<<"*********************************************"<<endl;
-  cout<<"bmin = "<<bmin<<"   bmax = "<<bmax<<"   nbins = "<<nbins<<"   bin_width = "<<bin_width<<endl;
-  TH1D *h4 = new TH1D("h4","Fit Xbj" , nbins, xmin, xmax);
+      //Create another histogram with the same bin sizes in the region of the elastic peak with the same bin widths as the Xbj histo. This new histo can then be integrated and compare with the Xbj histogram.
+      //Calculate bin width in the region of the elastic peak.
+      TAxis *axis = htot->GetXaxis();
+      Int_t bmin = axis->FindBin(xmin); 
+      Int_t bmax = axis->FindBin(xmax);
+      Double_t nbins = bmax-bmin;
+      Double_t bin_width = (xmax-xmin)/nbins;
+      cout<<"*********************************************"<<endl;
+      cout<<"bmin = "<<bmin<<"   bmax = "<<bmax<<"   nbins = "<<nbins<<"   bin_width = "<<bin_width<<endl;
+      TH1D *h4 = new TH1D("h4","Fit Xbj" , nbins, xmin, xmax);
 
       //Fill the fit histogram.
       for(Int_t i=0;i<nbins;i++)
@@ -905,7 +928,7 @@ void Xbj_New_Fit()
   cout<<"There are "<<func_gaus_Al->Integral(xmin,xmax)*xb_binwidth<<" elastic electrons in this fit."<<endl;
 
 
-//Now draw the production runs with no Al subraction on top of the scaled Al background for comparison.
+  //Now draw the production runs with no Al subraction on top of the scaled Al background for comparison.
   TCanvas* c4=new TCanvas("c4");
   c4->SetGrid();
   c4->SetLogy();
