@@ -12,6 +12,8 @@
 //#define theta1 21.;
 Int_t use_histo_method = 1;
 Int_t show_histos = 1;
+Int_t match_data = 1;
+Double_t scale_SIMC = 1.;       //Scale factor for SIMC histogram.
 Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Int_t runlist[1] = {4075};
   
@@ -23,7 +25,7 @@ Double_t thickness = 0.1979;   //Scale the Al background down to the thickness o
 Double_t rc_dummy = 1./0.548506, rc_walls = 1./0.681787;  //Scale Al background by the RC for dummy and 3He cells.
 Double_t xb_nbins = 200.;
 Double_t xbmin = 0., xbmax = 4.;
-Double_t xb_binwidth = 0.;
+Double_t xb_binwidth = abs(xbmax-xbmin)/xb_nbins;;
 //Double_t xmin = 2.92, xmax = 3.15;
 Double_t xmin = 2.95, xmax = 3.10;
 Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
@@ -31,14 +33,15 @@ Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
 Double_t fitmin = 2.3, fitmax = 3.15;
 //Double_t ymin = -0.028, ymax = 0.028;
 Double_t ymin = -0.03, ymax = 0.03;      //I think this should be changed to a L.tr.vz cut instead.
-Double_t thmin = -0.04, thmax = 0.055;
+Double_t thmin = -0.042, thmax = 0.049;
 Double_t phmin = -0.03, phmax = 0.03;
-Double_t dpmin = -0.03, dpmax = 0.03;
+Double_t dpmin = -0.02, dpmax = 0.03;
 Double_t ymin_SIMC = ymin*100., ymax_SIMC = ymax*100.;
 Double_t thmin_SIMC = TMath::ATan(thmin), thmax_SIMC = TMath::ATan(thmax);
 Double_t phmin_SIMC = TMath::ATan(phmin), phmax_SIMC = TMath::ATan(phmax);
 Double_t dpmin_SIMC = dpmin*100., dpmax_SIMC = dpmax*100.;
 Double_t density_cut = -0.01469; //Y target position where the density profile changes.
+Double_t GC_eff = 203./196.;     //GC efficiency correction to the elastic electron peak height. 
 
 void Xbj_New_Fit() 
 {
@@ -847,7 +850,7 @@ void Xbj_New_Fit()
 
   //Now plot the sum of the SIMC results and the Al subtracted background so that it can be compared to the experimental data.
   TH1D *h_summed_SIMC = new TH1D("h_summed_SIMC","Fit Background No Elastics Summed with SIMC Elastic Results" , xb_nbins, xbmin, xbmax);
-  h_summed_SIMC->Add(hSIMC,h_no_elastics,1.,1.);
+  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);
   h_summed_SIMC->Draw("same");
   h_summed_SIMC->SetLineColor(6);
 
@@ -858,12 +861,75 @@ void Xbj_New_Fit()
   func_total_SIMC->SetNpx(1000);
   func_total_SIMC->SetParameter(0,func_exp_Al->GetParameter(0));
   func_total_SIMC->SetParameter(1,func_exp_Al->GetParameter(1));
+  //func_total_SIMC->SetParLimits(0,10.,20.);
+  //func_total_SIMC->SetParLimits(1,-2.,-7.);
   func_total_SIMC->SetParameter(2,func_gaus_Al->GetParameter(0));
+  //func_total_SIMC->SetParLimits(2,200.,600.);
   func_total_SIMC->SetParameter(3,func_gaus_Al->GetParameter(1));
+  //func_total_SIMC->SetParLimits(3,2.9,3.1);
   func_total_SIMC->SetParameter(4,func_gaus_Al->GetParameter(2));
   h_summed_SIMC->Fit("func_total_SIMC","R same M");
   func_total_SIMC->Draw("same");
   cout<<"***** Total Fit Al Sub Summed SIMC: Chi^2 = "<<func_total_SIMC->GetChisquare()<<"   nDOF = "<<func_total_SIMC->GetNDF()<<"   Fit Probablility = "<<func_total_SIMC->GetProb()<<" *****"<<endl;
+
+  //Scale the SIMC results until the Gaussian SIMC peak nearly matches the data elastic peak height.
+  TF1 *clear = new TF1("clear","0.",xbmin,xbmax);  //Function defined to clear histos. (multiply them by zero).
+  if(match_data==1)
+    {
+      while(func_total_SIMC->GetParameter(2)>(func_total_Al->GetParameter(2)+0.5) || func_total_SIMC->GetParameter(2)<(func_total_Al->GetParameter(2)-0.5))
+	{
+	  if(func_total_SIMC->GetParameter(2)>(func_total_Al->GetParameter(2)+0.5))
+	    {
+	      //cout<<"Scale factor for SIMC data+ = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
+	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>100)
+		{
+		  scale_SIMC = scale_SIMC - 0.1;
+		}
+	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<100 && abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>10)
+		{
+		  scale_SIMC = scale_SIMC - 0.01;
+		}
+	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<10)
+		{
+		  scale_SIMC = scale_SIMC - 0.001;
+		}
+	      //cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
+	      h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+	      h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+	      h_summed_SIMC->Fit("func_total_SIMC","R same M q");
+	      //cout<<"*************************************************************************"<<endl;
+	    }
+	  else if(func_total_SIMC->GetParameter(2)<(func_total_Al->GetParameter(2)-0.5))
+	    {
+	      //cout<<"Scale factor for SIMC data- = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
+	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>100)
+		{
+		  scale_SIMC = scale_SIMC - 0.1;
+		}
+	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<100 && abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>10)
+		{
+		  scale_SIMC = scale_SIMC - 0.01;
+		}
+	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<10)
+		{
+		  scale_SIMC = scale_SIMC - 0.001;
+		}
+	      //cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
+	      h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+	      h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+	      h_summed_SIMC->Fit("func_total_SIMC","R same M q");
+	      //cout<<"*************************************************************************"<<endl;
+	    }
+	}
+	  //Within reasonable range of target height. Print the fit values using the final value of scale_SIMC.
+	  cout<<"*************************************************************************"<<endl;
+	  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+	  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+	  h_summed_SIMC->Fit("func_total_SIMC","R same M");
+cout<<"***** Fit after SIMC data scaled to match experimental data.: Chi^2 = "<<func_total_SIMC->GetChisquare()<<"   nDOF = "<<func_total_SIMC->GetNDF()<<"   Fit Probablility = "<<func_total_SIMC->GetProb()<<" *****"<<endl;
+    }
+  
+  cout<<"Scale factor for SIMC data = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
 
   //Calculate number of elactrons in elastic peak region for various fits.
   //Set exponential function to the exponential from func_total_Al.
@@ -881,10 +947,10 @@ void Xbj_New_Fit()
   //Number of electrons in peak region based on func_total_Al which uses fit_total (one exponetial and a Gaussian).
   //cout<<"The number of counts under the exponential background fit after the peak extrapolated back in to the peak region is "<<func_exp_Al_after->Integral(xmin,xmax)/bin_width<<"."<<endl;
   //cout<<"The number of counts under the linear background fit after the peak extrapolated back in to the peak region is "<<func_line_Al_after->Integral(xmin,xmax)/bin_width<<"."<<endl;
-  cout<<"The number of counts under the exponential fit to the total background in the combined fit is "<<func_exp_Al->Integral(xmin,xmax)/bin_width<<"."<<endl;
-  cout<<"The total counts under the elastic peak using the total fit of data ignoring all backgrounds is "<<func_total_Al->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"The number of counts under the exponential fit to the total background in the combined fit is "<<func_exp_Al->Integral(xmin,xmax)/xb_binwidth<<"."<<endl;
+  cout<<"The total counts under the elastic peak using the total fit of data ignoring all backgrounds is "<<func_total_Al->Integral(xmin,xmax)/xb_binwidth<<"."<<endl;
   cout<<"Data Gaussian: height = "<<func_total_Al->GetParameter(2)<<"   center = "<<func_total_Al->GetParameter(3)<<"   standard deviation = "<<func_total_Al->GetParameter(4)<<endl;
-  cout<<"The total counts under the elastic peak using the total fit of SIMC ignoring all backgrounds is "<<func_total_SIMC->Integral(xmin,xmax)/bin_width<<"."<<endl;
+  cout<<"The total counts under the elastic peak using the total fit of SIMC ignoring all backgrounds is "<<func_total_SIMC->Integral(xmin,xmax)/xb_binwidth<<"."<<endl;
   cout<<"SIMC Gaussian: height = "<<func_total_SIMC->GetParameter(2)<<"   center = "<<func_total_SIMC->GetParameter(3)<<"   standard deviation = "<<func_total_SIMC->GetParameter(4)<<endl;
   cout<<"********************************"<<endl;
   cout<<"********************************"<<endl;
@@ -923,9 +989,19 @@ void Xbj_New_Fit()
     }
   
   //Print the integral of the Gaussian fitting the elastic peak to find the number of elastic electrons. Scale to number of bins.
-  xb_binwidth = xb_nbins/(xbmax-xbmin);
+  //xb_binwidth = (xbmax-xbmin)/xb_nbins;
   cout<<"xb_binwidth = "<<xb_binwidth<<endl;
-  cout<<"There are "<<func_gaus_Al->Integral(xmin,xmax)*xb_binwidth<<" elastic electrons in this fit."<<endl;
+  //Find the number of electrons in the elastic peak from the total fit (func_total_Al).
+  cout<<"There are "<<func_gaus_Al->Integral(xmin,xmax)/xb_binwidth<<" elastic electrons in just the Gaussian part of the total data fit."<<endl;
+  //cout<<"There are "<<func_gaus_Al->Integral(xmin,xmax)/bin_width<<" elastic electrons in just the Gaussian part of the total data fit."<<endl;
+  cout<<"Gaussian paramerters data: par[0] = "<<func_gaus_Al->GetParameter(0)<<"   par[1] = "<<func_gaus_Al->GetParameter(1)<<"   par[2] = "<<func_gaus_Al->GetParameter(2)<<endl;
+  TF1 *func_gaus_SIMC = new TF1("func_gaus_SIMC",fit_gaus,xmin,xmax,3);
+  func_gaus_SIMC->SetParameter(0,func_total_SIMC->GetParameter(2));
+  func_gaus_SIMC->SetParameter(1,func_total_SIMC->GetParameter(3));
+  func_gaus_SIMC->SetParameter(2,func_total_SIMC->GetParameter(4));
+  cout<<"There are "<<func_gaus_SIMC->Integral(xmin,xmax)/xb_binwidth<<" elastic electrons in just the Gaussian part of the total SIMC fit."<<endl;
+  cout<<"Gaussian paramerters SIMC: par[0] = "<<func_gaus_SIMC->GetParameter(0)<<"   par[1] = "<<func_gaus_SIMC->GetParameter(1)<<"   par[2] = "<<func_gaus_SIMC->GetParameter(2)<<endl;
+  //cout<<"There are "<<func_total_Al->Integral(xmin,xmax)*xb_binwidth<<" elastic electrons in this total fit."<<endl;
 
 
   //Now draw the production runs with no Al subraction on top of the scaled Al background for comparison.
@@ -944,5 +1020,6 @@ void Xbj_New_Fit()
 
 
   st->Stop();
+  cout<<"*********************************************"<<endl;
   cout<<"CPU time = "<<st->CpuTime()<<" s = "<<st->CpuTime()/60.<<" min   Real time = "<<st->RealTime()<<" s = "<<st->RealTime()/60.<<" min"<<endl;
 }
