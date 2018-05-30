@@ -12,12 +12,14 @@
 //#define theta1 21.;
 Int_t use_histo_method = 1;
 Int_t show_histos = 1;
-Int_t match_data = 1;
+Int_t match_data = 0;
+Int_t gaus_or_total = 1;        //0-> match height of the data and SIMC elastic peaks using the max value of the Gaussian in the total fits. 1-> match height of the data and SIMC elasstic peaks using the max value (in the elastic peak region) of the total fit.
 Double_t scale_SIMC = 1.;       //Scale factor for SIMC histogram.
 Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Int_t runlist[1] = {4075};
   
-Double_t Normfac1 = 0.278306e10, Normfac2 = 0.188633e10;
+//Double_t Normfac1 = 0.278306e10, Normfac2 = 0.188633e10;
+Double_t Normfac1 = 0.272783e10, Normfac2 = 0.183444e10;
 Int_t nevts_SIMC = 100000;
   
 Double_t charge = 21.2708;     //Scale the Al background to the charge of the production runs.
@@ -25,7 +27,7 @@ Double_t thickness = 0.1979;   //Scale the Al background down to the thickness o
 Double_t rc_dummy = 1./0.548506, rc_walls = 1./0.681787;  //Scale Al background by the RC for dummy and 3He cells.
 Double_t xb_nbins = 200.;
 Double_t xbmin = 0., xbmax = 4.;
-Double_t xb_binwidth = abs(xbmax-xbmin)/xb_nbins;;
+Double_t xb_binwidth = fabs(xbmax-xbmin)/xb_nbins;;
 //Double_t xmin = 2.92, xmax = 3.15;
 Double_t xmin = 2.95, xmax = 3.10;
 Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
@@ -624,7 +626,11 @@ void Xbj_New_Fit()
   //Also read in SIMC elastic results to compare to the experimental elastic peak. Split into two ROOT files with different 3He densities to represent the boiling effects. Spliced together with a Y target cut.
   //Add first SIMC ROOT file with initial density.
   TChain *SIMC1 = new TChain("h666");
-  SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0345.root");
+  //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0345.root");
+  //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.576893_5_29_18.root");
+  //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.600714_5_29_18.root");
+  SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.57299897225_5_29_18.root");
+  //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.5966591805_5_29_18.root");
   SIMC1->SetBranchStatus("*",0);
   SIMC1->SetBranchStatus("xbj",1);
   SIMC1->SetBranchStatus("ssytar",1);
@@ -636,7 +642,11 @@ void Xbj_New_Fit()
 
   //Add second SIMC ROOT file with initial density.
   TChain *SIMC2 = new TChain("h666");
-  SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0233.root");
+  //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0233.root");
+  //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.576893_5_29_18.root");
+  //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.600714_5_29_18.root");
+  SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.57299897225_5_29_18.root");
+  //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.5966591805_5_29_18.root");
   SIMC2->SetBranchStatus("*",0);
   SIMC2->SetBranchStatus("xbj",1);
   SIMC2->SetBranchStatus("ssytar",1);
@@ -876,61 +886,122 @@ void Xbj_New_Fit()
   TF1 *clear = new TF1("clear","0.",xbmin,xbmax);  //Function defined to clear histos. (multiply them by zero).
   if(match_data==1)
     {
-      while(func_total_SIMC->GetParameter(2)>(func_total_Al->GetParameter(2)+0.5) || func_total_SIMC->GetParameter(2)<(func_total_Al->GetParameter(2)-0.5))
+      if(gaus_or_total==0)
 	{
-	  if(func_total_SIMC->GetParameter(2)>(func_total_Al->GetParameter(2)+0.5))
+	  while(func_total_SIMC->GetParameter(2)>(func_total_Al->GetParameter(2)+0.5) || func_total_SIMC->GetParameter(2)<(func_total_Al->GetParameter(2)-0.5))
 	    {
-	      //cout<<"Scale factor for SIMC data+ = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
-	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>100)
+	      if(func_total_SIMC->GetParameter(2)>(func_total_Al->GetParameter(2)+0.5))
 		{
-		  scale_SIMC = scale_SIMC - 0.1;
+		  cout<<"Scale factor for SIMC data+ = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
+		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>100)
+		    {
+		      scale_SIMC = scale_SIMC - 0.1;
+		    }
+		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<100 && fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>10)
+		    {
+		      //cout<<"fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2)) = "<<fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<<endl;
+		      scale_SIMC = scale_SIMC - 0.01;
+		    }
+		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.001;
+		    }
+		  cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
+		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+		  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
+		  cout<<"Scale factor for SIMC data+ = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
+		  cout<<"*************************************************************************"<<endl;
 		}
-	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<100 && abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>10)
+	      else if(func_total_SIMC->GetParameter(2)<(func_total_Al->GetParameter(2)-0.5))
 		{
-		  scale_SIMC = scale_SIMC - 0.01;
+		  //cout<<"Scale factor for SIMC data- = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
+		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>100)
+		    {
+		      scale_SIMC = scale_SIMC - 0.1;
+		    }
+		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<100 && fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.01;
+		    }
+		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.001;
+		    }
+		  //cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
+		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+		  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
+		  //cout<<"*************************************************************************"<<endl;
 		}
-	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<10)
-		{
-		  scale_SIMC = scale_SIMC - 0.001;
-		}
-	      //cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
-	      h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
-	      h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
-	      h_summed_SIMC->Fit("func_total_SIMC","R same M q");
-	      //cout<<"*************************************************************************"<<endl;
-	    }
-	  else if(func_total_SIMC->GetParameter(2)<(func_total_Al->GetParameter(2)-0.5))
-	    {
-	      //cout<<"Scale factor for SIMC data- = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
-	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>100)
-		{
-		  scale_SIMC = scale_SIMC - 0.1;
-		}
-	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<100 && abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>10)
-		{
-		  scale_SIMC = scale_SIMC - 0.01;
-		}
-	      if(abs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<10)
-		{
-		  scale_SIMC = scale_SIMC - 0.001;
-		}
-	      //cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
-	      h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
-	      h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
-	      h_summed_SIMC->Fit("func_total_SIMC","R same M q");
-	      //cout<<"*************************************************************************"<<endl;
 	    }
 	}
-	  //Within reasonable range of target height. Print the fit values using the final value of scale_SIMC.
-	  cout<<"*************************************************************************"<<endl;
-	  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
-	  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
-	  h_summed_SIMC->Fit("func_total_SIMC","R same M");
-cout<<"***** Fit after SIMC data scaled to match experimental data.: Chi^2 = "<<func_total_SIMC->GetChisquare()<<"   nDOF = "<<func_total_SIMC->GetNDF()<<"   Fit Probablility = "<<func_total_SIMC->GetProb()<<" *****"<<endl;
+
+      //Using total fit peak matching. (Not just Gaussian portion of the total fit.
+      if(gaus_or_total==1)
+	{
+	  while(func_total_SIMC->GetMaximum(xmin,xmax)>(func_total_Al->GetMaximum(xmin,xmax)+0.5) || func_total_SIMC->GetMaximum(xmin,xmax)<(func_total_Al->GetMaximum(xmin,xmax)-0.5))
+	    {
+	      if(func_total_SIMC->GetMaximum(xmin,xmax)>(func_total_Al->GetMaximum(xmin,xmax)+0.5))
+		{
+		  cout<<"Scale factor for SIMC data+ = "<<scale_SIMC<<",   total fit height = "<<func_total_Al->GetMaximum(xmin,xmax)<<",   total fit height  = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
+		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))>100)
+		    {
+		      scale_SIMC = scale_SIMC - 0.1;
+		    }
+		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))<100 && fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))>10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.01;
+		    }
+		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))<10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.001;
+		    }
+		  cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
+		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+		  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
+		  cout<<"*************************************************************************"<<endl;
+		}
+	      else if(func_total_SIMC->GetMaximum(xmin,xmax)<(func_total_Al->GetMaximum(xmin,xmax)-0.5))
+		{
+		  //cout<<"Scale factor for SIMC data- = "<<scale_SIMC<<",   total fit height = "<<func_total_Al->GetMaximum(xmin,xmax)<<",   total fit height = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
+		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))>100)
+		    {
+		      scale_SIMC = scale_SIMC - 0.1;
+		    }
+		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))<100 && fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))>10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.01;
+		    }
+		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))<10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.001;
+		    }
+		  //cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
+		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+		  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
+		  //cout<<"*************************************************************************"<<endl;
+		}
+	    }
+	}
+
+      //cout<<"Max value of elastic peak for data total fit = "<<func_total_Al->GetMaximum(xmin,xmax)<<endl;
+      //cout<<"Max value of elastic peak for SIMC total fit = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
+
+      //Within reasonable range of target height. Print the fit values using the final value of scale_SIMC.
+      cout<<"*************************************************************************"<<endl;
+      h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+      h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+      h_summed_SIMC->Fit("func_total_SIMC","R same M");
+      cout<<"***** Fit after SIMC data scaled to match experimental data.: Chi^2 = "<<func_total_SIMC->GetChisquare()<<"   nDOF = "<<func_total_SIMC->GetNDF()<<"   Fit Probablility = "<<func_total_SIMC->GetProb()<<" *****"<<endl;
     }
   
-  cout<<"Scale factor for SIMC data = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
-
+  cout<<"Scale factor for SIMC data = "<<scale_SIMC<<".   Multiplying the scale factor for the elastic peak by the GC efficiency correction of "<<GC_eff<<" yields a final scale factor of "<<scale_SIMC*GC_eff<<endl;
+  cout<<"Gaussian part of total data fit par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian part of total SIMC fit par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
+  cout<<"Max height of total data fit in elastic peak region = "<<func_total_Al->GetMaximum(xmin,xmax)<<"   Max height of total SIMC fit in elastic peak region = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
+  
   //Calculate number of elactrons in elastic peak region for various fits.
   //Set exponential function to the exponential from func_total_Al.
   func_exp_Al->SetParameter(0,func_total_Al->GetParameter(0));
