@@ -12,14 +12,20 @@
 //#define theta1 21.;
 Int_t use_histo_method = 1;
 Int_t show_histos = 1;
-Int_t match_data = 0;
+Int_t use_split_density = 0;
+Int_t match_data = 1;
 Int_t gaus_or_total = 1;        //0-> match height of the data and SIMC elastic peaks using the max value of the Gaussian in the total fits. 1-> match height of the data and SIMC elasstic peaks using the max value (in the elastic peak region) of the total fit.
 Double_t scale_SIMC = 1.;       //Scale factor for SIMC histogram.
 Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Int_t runlist[1] = {4075};
   
 //Double_t Normfac1 = 0.278306e10, Normfac2 = 0.188633e10;
-Double_t Normfac1 = 0.272783e10, Normfac2 = 0.183444e10;
+//Double_t Normfac1 = 0.272783e10, Normfac2 = 0.183444e10;
+//Double_t Normfac1 = 0.282782e10, Normfac2 = 0.191004e10;  //XS * 0.59552
+//Double_t Normfac1 = 0.856831e9;      //XS * 0.59552 0.01045 g/cm^3
+//Double_t Normfac1 = 0.112683e10;      //XS * 0.59552 0.01375 g/cm^3
+//Double_t Normfac1 = 0.856831e9;      //XS * 1.41330 0.01375 g/cm^3
+Double_t Normfac1 = 0.112683e10;      //XS * 1.08312 0.01375 g/cm^3
 Int_t nevts_SIMC = 100000;
   
 Double_t charge = 21.2708;     //Scale the Al background to the charge of the production runs.
@@ -35,15 +41,20 @@ Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
 Double_t fitmin = 2.3, fitmax = 3.15;
 //Double_t ymin = -0.028, ymax = 0.028;
 Double_t ymin = -0.03, ymax = 0.03;      //I think this should be changed to a L.tr.vz cut instead.
-Double_t thmin = -0.042, thmax = 0.049;
-Double_t phmin = -0.03, phmax = 0.03;
-Double_t dpmin = -0.02, dpmax = 0.03;
+Double_t thmin = -0.035, thmax = 0.035;  //Dien's cuts.
+Double_t phmin = -0.025, phmax = 0.025;
+Double_t dpmin = -0.035, dpmax = 0.035;
+//Double_t thmin = -0.042, thmax = 0.049;
+//Double_t phmin = -0.03, phmax = 0.03;
+//Double_t dpmin = -0.02, dpmax = 0.03;
 Double_t ymin_SIMC = ymin*100., ymax_SIMC = ymax*100.;
 Double_t thmin_SIMC = TMath::ATan(thmin), thmax_SIMC = TMath::ATan(thmax);
 Double_t phmin_SIMC = TMath::ATan(phmin), phmax_SIMC = TMath::ATan(phmax);
 Double_t dpmin_SIMC = dpmin*100., dpmax_SIMC = dpmax*100.;
 Double_t density_cut = -0.01469; //Y target position where the density profile changes.
+Double_t pr_yint = 2000.;
 Double_t GC_eff = 203./196.;     //GC efficiency correction to the elastic electron peak height. 
+Double_t DT_correction = 1./0.9527;
 
 void Xbj_New_Fit() 
 {
@@ -277,7 +288,7 @@ void Xbj_New_Fit()
 	  //if(L_tr_tg_y[0]>ymin && L_tr_tg_y[0]<ymax && L_tr_n==1 && (evtypebits&1<<3)==1<<3 && L_prl1_e>(-L_prl2_e+2000) && L_tg_th[0]>thmin && L_tg_th[0]<thmax) 
 	  //if(L_tr_tg_y[0]>ymin && L_tr_tg_y[0]<ymax && L_tr_n==1 && (evtypebits&1<<3)==1<<3 && L_prl1_e>(-L_prl2_e+2000) && L_tg_ph[0]>phmin && L_tg_ph[0]<phmax)
 	  //Various cuts.
-	  if(L_tr_tg_y[0]>ymin && L_tr_tg_y[0]<ymax && L_tr_n==1 && (evtypebits&1<<3)==1<<3 && L_prl1_e>(-L_prl2_e+2000) && L_tg_ph[0]>phmin && L_tg_ph[0]<phmax && L_tg_th[0]>thmin && L_tg_th[0]<thmax && L_tg_dp[0]>dpmin && L_tg_dp[0]<dpmax)
+	  if(L_tr_tg_y[0]>ymin && L_tr_tg_y[0]<ymax && L_tr_n==1 && (evtypebits&1<<3)==1<<3 && L_prl1_e>(-L_prl2_e+pr_yint) && L_tg_ph[0]>phmin && L_tg_ph[0]<phmax && L_tg_th[0]>thmin && L_tg_th[0]<thmax && L_tg_dp[0]>dpmin && L_tg_dp[0]<dpmax)
 	    {
 	      //Beam trip cuts. Cut out BCM scaler values in the range of the beam trips.
 	      if((u1c>=rising_u1[0]&&u1c<=falling_u1[0])||(u1c>=rising_u1[1]&&u1c<=falling_u1[1])||(u1c>=rising_u1[2]&&u1c<=falling_u1[2])||(u1c>=rising_u1[3]&&u1c<=falling_u1[3])||(u1c>=rising_u1[4]&&u1c<=falling_u1[4])||(u1c>=rising_u1[5]&&u1c<=falling_u1[5])||(u1c>=rising_u1[6]&&u1c<=falling_u1[6])||(u1c>=rising_u1[7]&&u1c<=falling_u1[7])||(u1c>=rising_u1[8]&&u1c<=falling_u1[8])||(u1c>=rising_u1[9]&&u1c<=falling_u1[9]))
@@ -603,7 +614,7 @@ void Xbj_New_Fit()
   for(Int_t i=0;i<nevts_Al;i++) 
     {
       B->GetEntry(i);
-      if(L_tr_tg_y_Al[0]>ymin && L_tr_tg_y_Al[0]<ymax && L_tr_n_Al==1 && (evtypebits_Al&1<<3)==1<<3 && L_prl1_e_Al>(-L_prl2_e_Al+2000) && L_tg_ph_Al[0]>phmin && L_tg_ph_Al[0]<phmax && L_tg_th_Al[0]>thmin && L_tg_th_Al[0]<thmax && L_tg_dp_Al[0]>dpmin && L_tg_dp_Al[0]<dpmax)
+      if(L_tr_tg_y_Al[0]>ymin && L_tr_tg_y_Al[0]<ymax && L_tr_n_Al==1 && (evtypebits_Al&1<<3)==1<<3 && L_prl1_e_Al>(-L_prl2_e_Al+pr_yint) && L_tg_ph_Al[0]>phmin && L_tg_ph_Al[0]<phmax && L_tg_th_Al[0]>thmin && L_tg_th_Al[0]<thmax && L_tg_dp_Al[0]>dpmin && L_tg_dp_Al[0]<dpmax)
 	{
 	  hAl->Fill(Ext_x_bj_Al);
 	  nevts_cuts_Al++;
@@ -624,72 +635,105 @@ void Xbj_New_Fit()
 
 
   //Also read in SIMC elastic results to compare to the experimental elastic peak. Split into two ROOT files with different 3He densities to represent the boiling effects. Spliced together with a Y target cut.
-  //Add first SIMC ROOT file with initial density.
-  TChain *SIMC1 = new TChain("h666");
-  //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0345.root");
-  //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.576893_5_29_18.root");
-  //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.600714_5_29_18.root");
-  SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.57299897225_5_29_18.root");
-  //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.5966591805_5_29_18.root");
-  SIMC1->SetBranchStatus("*",0);
-  SIMC1->SetBranchStatus("xbj",1);
-  SIMC1->SetBranchStatus("ssytar",1);
-  SIMC1->SetBranchStatus("ssytari",1);
-  SIMC1->SetBranchStatus("ssyptar",1);
-  SIMC1->SetBranchStatus("ssxptar",1);
-  SIMC1->SetBranchStatus("ssdelta",1);
-  SIMC1->SetBranchStatus("Weight",1);
-
-  //Add second SIMC ROOT file with initial density.
-  TChain *SIMC2 = new TChain("h666");
-  //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0233.root");
-  //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.576893_5_29_18.root");
-  //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.600714_5_29_18.root");
-  SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.57299897225_5_29_18.root");
-  //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.5966591805_5_29_18.root");
-  SIMC2->SetBranchStatus("*",0);
-  SIMC2->SetBranchStatus("xbj",1);
-  SIMC2->SetBranchStatus("ssytar",1);
-  SIMC2->SetBranchStatus("ssytari",1);
-  SIMC2->SetBranchStatus("ssyptar",1);
-  SIMC2->SetBranchStatus("ssxptar",1);
-  SIMC2->SetBranchStatus("ssdelta",1);
-  SIMC2->SetBranchStatus("Weight",1);
-
-  //Create histo for the first density ROOT file.
-  TH1D *hSIMC1 = new TH1D("hSIMC1","SIMC First Density Xbj" , xb_nbins, xbmin, xbmax);
-  hSIMC1->SetLineColor(3);
-  if(show_histos==1)
+  if(use_split_density==1)
     {
-      SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
-    }
-  else //Won't draw the histogram on the canvas but will still fill it.
-    {
-      SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
-      hSIMC1->Add(hSIMC1,1.);
-    }
-
-  //Create histo for the second density ROOT file.
-  TH1D *hSIMC2 = new TH1D("hSIMC2","SIMC Second Density Xbj" , xb_nbins, xbmin, xbmax);
-  hSIMC2->SetLineColor(8);
-  if(show_histos==1)
-    {
-      SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac2,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
-    }
-  else //Won't draw the histogram on the canvas but will still fill it.
+      //Add first SIMC ROOT file with initial density.
+      TChain *SIMC1 = new TChain("h666");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0345.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.576893_5_29_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.57299897225_5_29_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0345_xs0.57299897225_5_30_18.root");
+      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0345_xs0.59552_6_11_18.root");
+      SIMC1->SetBranchStatus("*",0);
+      SIMC1->SetBranchStatus("xbj",1);
+      SIMC1->SetBranchStatus("ssytar",1);
+      SIMC1->SetBranchStatus("ssytari",1);
+      SIMC1->SetBranchStatus("ssyptar",1);
+      SIMC1->SetBranchStatus("ssxptar",1);
+      SIMC1->SetBranchStatus("ssdelta",1);
+      SIMC1->SetBranchStatus("Weight",1);
+      
+      //Add second SIMC ROOT file with initial density.
+      TChain *SIMC2 = new TChain("h666");
+      //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_y50_dp6_x70_rho0.0233.root");
+      //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.576893_5_29_18.root");
+      //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.57299897225_5_29_18.root");
+      //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0233_xs0.57299897225_5_30_18.root");
+      SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0233_xs0.59552_6_11_18.root");
+      SIMC2->SetBranchStatus("*",0);
+      SIMC2->SetBranchStatus("xbj",1);
+      SIMC2->SetBranchStatus("ssytar",1);
+      SIMC2->SetBranchStatus("ssytari",1);
+      SIMC2->SetBranchStatus("ssyptar",1);
+      SIMC2->SetBranchStatus("ssxptar",1);
+      SIMC2->SetBranchStatus("ssdelta",1);
+      SIMC2->SetBranchStatus("Weight",1);
+      
+      //Create histo for the first density ROOT file.
+      TH1D *hSIMC1 = new TH1D("hSIMC1","SIMC First Density Xbj" , xb_nbins, xbmin, xbmax);
+      hSIMC1->SetLineColor(3);
+      if(show_histos==1)
+	{
+	  SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
+	}
+      else //Won't draw the histogram on the canvas but will still fill it.
+	{
+	  SIMC1->Draw("xbj>>hSIMC1",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
+	  hSIMC1->Add(hSIMC1,1.);
+	}
+      
+      //Create histo for the second density ROOT file.
+      TH1D *hSIMC2 = new TH1D("hSIMC2","SIMC Second Density Xbj" , xb_nbins, xbmin, xbmax);
+      hSIMC2->SetLineColor(8);
+      if(show_histos==1)
+	{
+	  SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac2,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"same");
+	}
+      else //Won't draw the histogram on the canvas but will still fill it.
     {
       SIMC2->Draw("xbj>>hSIMC2",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f&&ssytari>%f)",Normfac2,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC,density_cut),"");
       hSIMC2->Add(hSIMC2,1.);
     }
+      
+      cout<<"nevts hSIMC1 = "<<hSIMC1->GetEntries()<<"   nevts hSIMC2 = "<<hSIMC2->GetEntries()<<endl;
+      
+      //Now sum the two different density ROOT files together.
+      TH1D *hSIMC = new TH1D("hSIMC","SIMC Combined Density Xbj" , xb_nbins, xbmin, xbmax);
+      hSIMC->SetLineColor(kBlack);
+      hSIMC->Add(hSIMC1,hSIMC2,1.,1.);
+      hSIMC->Draw("same");   
+    }
+  else if       //If using only a single average density across the cell.
+    {
+      //Add SIMC ROOT file with average density.
+      TChain *SIMC1 = new TChain("h666");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01045_xs0.59552_6_19_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01375_xs0.59552_6_19_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01045_xs1.4133_6_20_18.root");
+      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01375_xs1.08312_6_20_18.root");
+      SIMC1->SetBranchStatus("*",0);
+      SIMC1->SetBranchStatus("xbj",1);
+      SIMC1->SetBranchStatus("ssytar",1);
+      SIMC1->SetBranchStatus("ssytari",1);
+      SIMC1->SetBranchStatus("ssyptar",1);
+      SIMC1->SetBranchStatus("ssxptar",1);
+      SIMC1->SetBranchStatus("ssdelta",1);
+      SIMC1->SetBranchStatus("Weight",1);
 
-  cout<<"nevts hSIMC1 = "<<hSIMC1->GetEntries()<<"   nevts hSIMC2 = "<<hSIMC2->GetEntries()<<endl;
-
-  //Now sum the two different density ROOT files together.
-  TH1D *hSIMC = new TH1D("hSIMC","SIMC Combined Density Xbj" , xb_nbins, xbmin, xbmax);
-  hSIMC->SetLineColor(kBlack);
-  hSIMC->Add(hSIMC1,hSIMC2,1.,1.);
-  hSIMC->Draw("same");
-
+      //Create histo for the first density ROOT file.
+      TH1D *hSIMC = new TH1D("hSIMC","SIMC Average Density Xbj" , xb_nbins, xbmin, xbmax);
+      hSIMC->SetLineColor(3);
+      if(show_histos==1)
+	{
+	  SIMC1->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");
+	}
+      else //Won't draw the histogram on the canvas but will still fill it.
+	{
+	  SIMC1->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"");
+	  hSIMC->Add(hSIMC,1.);
+	}
+    }
+  
   //Now we want to fit the background subtracted histogram and find the number of elastic electrons.
 
   //Fit the histogram excluding the elastic peak.
@@ -873,7 +917,7 @@ void Xbj_New_Fit()
   func_total_SIMC->SetParameter(1,func_exp_Al->GetParameter(1));
   //func_total_SIMC->SetParLimits(0,10.,20.);
   //func_total_SIMC->SetParLimits(1,-2.,-7.);
-  func_total_SIMC->SetParameter(2,func_gaus_Al->GetParameter(0));
+  func_total_SIMC->SetParameter(2,0.5*func_gaus_Al->GetParameter(0));
   //func_total_SIMC->SetParLimits(2,200.,600.);
   func_total_SIMC->SetParameter(3,func_gaus_Al->GetParameter(1));
   //func_total_SIMC->SetParLimits(3,2.9,3.1);
@@ -918,15 +962,15 @@ void Xbj_New_Fit()
 		  //cout<<"Scale factor for SIMC data- = "<<scale_SIMC<<",   Gaussian data par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian SIMC par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
 		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>100)
 		    {
-		      scale_SIMC = scale_SIMC - 0.1;
+		      scale_SIMC = scale_SIMC + 0.1;
 		    }
 		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<100 && fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))>10)
 		    {
-		      scale_SIMC = scale_SIMC - 0.01;
+		      scale_SIMC = scale_SIMC + 0.01;
 		    }
 		  if(fabs(func_total_Al->GetParameter(2)-func_total_SIMC->GetParameter(2))<10)
 		    {
-		      scale_SIMC = scale_SIMC - 0.001;
+		      scale_SIMC = scale_SIMC + 0.001;
 		    }
 		  //cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
 		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
@@ -960,6 +1004,17 @@ void Xbj_New_Fit()
 		  cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
 		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
 		  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+		  /*
+  func_total_SIMC->SetParameter(0,func_total_SIMC->GetParameter(0));
+  func_total_SIMC->SetParameter(1,func_total_SIMC->GetParameter(1));
+  //func_total_SIMC->SetParLimits(0,10.,20.);
+  //func_total_SIMC->SetParLimits(1,-2.,-7.);
+  func_total_SIMC->SetParameter(2,func_total_SIMC->GetParameter(2));
+  //func_total_SIMC->SetParLimits(2,200.,600.);
+  func_total_SIMC->SetParameter(3,func_total_SIMC->GetParameter(3));
+  //func_total_SIMC->SetParLimits(3,2.9,3.1);
+  func_total_SIMC->SetParameter(4,func_total_SIMC->GetParameter(4));
+		  */
 		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
 		  cout<<"*************************************************************************"<<endl;
 		}
@@ -968,19 +1023,30 @@ void Xbj_New_Fit()
 		  //cout<<"Scale factor for SIMC data- = "<<scale_SIMC<<",   total fit height = "<<func_total_Al->GetMaximum(xmin,xmax)<<",   total fit height = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
 		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))>100)
 		    {
-		      scale_SIMC = scale_SIMC - 0.1;
+		      scale_SIMC = scale_SIMC + 0.1;
 		    }
 		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))<100 && fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))>10)
 		    {
-		      scale_SIMC = scale_SIMC - 0.01;
+		      scale_SIMC = scale_SIMC + 0.01;
 		    }
 		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))<10)
 		    {
-		      scale_SIMC = scale_SIMC - 0.001;
+		      scale_SIMC = scale_SIMC + 0.001;
 		    }
 		  //cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
 		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
 		  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+		  /*
+  func_total_SIMC->SetParameter(0,func_total_SIMC->GetParameter(0));
+  func_total_SIMC->SetParameter(1,func_total_SIMC->GetParameter(1));
+  //func_total_SIMC->SetParLimits(0,10.,20.);
+  //func_total_SIMC->SetParLimits(1,-2.,-7.);
+  func_total_SIMC->SetParameter(2,func_total_SIMC->GetParameter(2));
+  //func_total_SIMC->SetParLimits(2,200.,600.);
+  func_total_SIMC->SetParameter(3,func_total_SIMC->GetParameter(3));
+  //func_total_SIMC->SetParLimits(3,2.9,3.1);
+  func_total_SIMC->SetParameter(4,func_total_SIMC->GetParameter(4));
+		  */
 		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
 		  //cout<<"*************************************************************************"<<endl;
 		}
@@ -998,7 +1064,7 @@ void Xbj_New_Fit()
       cout<<"***** Fit after SIMC data scaled to match experimental data.: Chi^2 = "<<func_total_SIMC->GetChisquare()<<"   nDOF = "<<func_total_SIMC->GetNDF()<<"   Fit Probablility = "<<func_total_SIMC->GetProb()<<" *****"<<endl;
     }
   
-  cout<<"Scale factor for SIMC data = "<<scale_SIMC<<".   Multiplying the scale factor for the elastic peak by the GC efficiency correction of "<<GC_eff<<" yields a final scale factor of "<<scale_SIMC*GC_eff<<endl;
+  cout<<"Scale factor for SIMC data = "<<scale_SIMC<<".   Multiplying the scale factor for the elastic peak by the GC efficiency correction of "<<GC_eff<<" yields a scale factor of "<<scale_SIMC*GC_eff<<". Multiplying this value by the DT correction of "<<DT_correction<<" yields a final scale factor of "<<scale_SIMC*GC_eff*DT_correction<<"."<<endl;
   cout<<"Gaussian part of total data fit par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian part of total SIMC fit par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
   cout<<"Max height of total data fit in elastic peak region = "<<func_total_Al->GetMaximum(xmin,xmax)<<"   Max height of total SIMC fit in elastic peak region = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
   
@@ -1086,6 +1152,9 @@ void Xbj_New_Fit()
   hAlScaled->Add(hAl,1.*charge*thickness*rc_dummy/rc_walls);
   hAlScaled->Draw("same");
   hAlScaled->SetLineColor(kRed);
+  cout<<"*********************************************"<<endl;
+  cout<<"Total events in unsubtracted Xbj = "<<h1->GetEntries()<<".   Total events in scaled Al background = "<<hAlScaled->GetEntries()<<"."<<endl;
+  cout<<"The number of events in the unsubtracted Xbj peak = "<<h1->Integral(h1->FindBin(xmin),h1->FindBin(xmax))<<". The number of events in the elastic peak region of the scaled Al background = "<<hAlScaled->Integral(hAlScaled->FindBin(xmin),hAlScaled->FindBin(xmax))<<"."<<endl;
   //htot->Add(h1,hAl,1.,-1.*charge*thickness*rc_dummy/rc_walls);
   //htot->Draw();
 
