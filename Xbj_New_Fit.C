@@ -14,7 +14,7 @@ Int_t use_histo_method = 1;
 Int_t show_histos = 1;
 Int_t use_split_density = 0;
 Int_t match_data = 1;
-Int_t gaus_or_total = 1;        //0-> match height of the data and SIMC elastic peaks using the max value of the Gaussian in the total fits. 1-> match height of the data and SIMC elasstic peaks using the max value (in the elastic peak region) of the total fit.
+Int_t gaus_or_total = 2;        //0-> match height of the data and SIMC elastic peaks using the max value of the Gaussian in the total fits. 1-> match height of the data and SIMC elasstic peaks using the max value (in the elastic peak region) of the total fit. 2-> match the areas of the Gaussian parts of the total data and total SIMC fits. 
 Int_t subtract_SIMC = 0;             //0-> The exponential fit of the experimental background is used to fill the h_no_elastics histo. It uses the region of fitmin to fitmax. 1-> then the exponential background fit of the experimental data has the generated SIMC elastic events subtracted from it before the h_no_elastics histo is filled. 
 Int_t use_lorentz = 0;
 Double_t scale_SIMC = 1.;       //Scale factor for SIMC histogram.
@@ -1131,16 +1131,91 @@ void Xbj_New_Fit()
 	    }
 	}
 
+
+      TF1 *func_total_gaus_data = new TF1("func_total_gaus_data",fit_gaus,xmin,xmax,3);
+      func_total_gaus_data->SetParameter(0,func_total_Al->GetParameter(2));
+      func_total_gaus_data->SetParameter(1,func_total_Al->GetParameter(3));
+      func_total_gaus_data->SetParameter(2,func_total_Al->GetParameter(4));
+      TF1 *func_total_gaus_SIMC = new TF1("func_total_gaus_SIMC",fit_gaus,xmin,xmax,3);
+      func_total_gaus_SIMC->SetParameter(0,func_total_SIMC->GetParameter(2));
+      func_total_gaus_SIMC->SetParameter(1,func_total_SIMC->GetParameter(3));
+      func_total_gaus_SIMC->SetParameter(2,func_total_SIMC->GetParameter(4));
+      Double_t area_data = func_total_gaus_data->Integral(xmin,xmax)/xb_binwidth;
+      Double_t area_SIMC = func_total_gaus_SIMC->Integral(xmin,xmax)/xb_binwidth;
+
+      //Match the areas of the Gaussian portions of both the data and SIMC total fits.
+      if(gaus_or_total==2)
+	{
+	  cout<<"Area of data Gaussian before scaling = "<<area_data<<"   Area of SIMC Gaussian before scaling = "<<area_SIMC<<endl;
+
+	  while(area_SIMC>(area_data+0.5) || area_SIMC<(area_data-0.5))
+	    {
+	      if(area_SIMC>(area_data+0.5))
+		{
+		  cout<<"Scale factor for SIMC+ = "<<scale_SIMC<<",   total data fit Gaussian area = "<<area_data<<",   total SIMC fit Gaussian area  = "<<area_SIMC<<endl;
+		  if(fabs(area_data-area_SIMC)>100)
+		    {
+		      scale_SIMC = scale_SIMC - 0.1;
+		    }
+		  if(fabs(area_data-area_SIMC)<=100 && fabs(area_data-area_SIMC)>=10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.01;
+		    }
+		  if(fabs(area_data-area_SIMC)<10)
+		    {
+		      scale_SIMC = scale_SIMC - 0.001;
+		    }
+		  cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
+		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+		  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
+		  //Redefine the Gaussian part of the new SIMC fit.
+		  func_total_gaus_SIMC->SetParameter(0,func_total_SIMC->GetParameter(2));
+		  func_total_gaus_SIMC->SetParameter(1,func_total_SIMC->GetParameter(3));
+		  func_total_gaus_SIMC->SetParameter(2,func_total_SIMC->GetParameter(4));
+		  area_SIMC = func_total_gaus_SIMC->Integral(xmin,xmax)/xb_binwidth;
+
+		  cout<<"*************************************************************************"<<endl;
+		}
+	      else if(area_SIMC<(area_data-0.5))
+		{
+		  cout<<"Scale factor for SIMC+ = "<<scale_SIMC<<",   total data fit Gaussian area = "<<area_data<<",   total SIMC fit Gaussian area  = "<<area_SIMC<<endl;
+		  if(fabs(area_data-area_SIMC)>100)
+		    {
+		      scale_SIMC = scale_SIMC + 0.1;
+		    }
+		  if(fabs(area_data-area_SIMC)<=100 && fabs(area_data-area_SIMC)>=10)
+		    {
+		      scale_SIMC = scale_SIMC + 0.01;
+		    }
+		  if(fabs(area_data-area_SIMC)<10)
+		    {
+		      scale_SIMC = scale_SIMC + 0.001;
+		    }
+		  cout<<"Updated scale_SIMC = "<<scale_SIMC<<endl;
+		  h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
+		  h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
+		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
+		  //Redefine the Gaussian part of the new SIMC fit.
+		  func_total_gaus_SIMC->SetParameter(0,func_total_SIMC->GetParameter(2));
+		  func_total_gaus_SIMC->SetParameter(1,func_total_SIMC->GetParameter(3));
+		  func_total_gaus_SIMC->SetParameter(2,func_total_SIMC->GetParameter(4));
+		  area_SIMC = func_total_gaus_SIMC->Integral(xmin,xmax)/xb_binwidth;
+		  cout<<"*************************************************************************"<<endl;
+		}
+	    }//End while loop.
+	}//End Gaussian area matching function.
+
       //cout<<"Max value of elastic peak for data total fit = "<<func_total_Al->GetMaximum(xmin,xmax)<<endl;
       //cout<<"Max value of elastic peak for SIMC total fit = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
 
-      //Within reasonable range of target height. Print the fit values using the final value of scale_SIMC.
+      //Within reasonable range of target height or area. Print the fit values using the final value of scale_SIMC.
       cout<<"*************************************************************************"<<endl;
       h_summed_SIMC->Multiply(clear,1.);    //Clear h_summed_SIMC.
       h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);    //Refill h_summed_SIMC using a new scale factor for the SIMC data.
       h_summed_SIMC->Fit("func_total_SIMC","R same M");
       cout<<"***** Fit after SIMC data scaled to match experimental data.: Chi^2 = "<<func_total_SIMC->GetChisquare()<<"   nDOF = "<<func_total_SIMC->GetNDF()<<"   Fit Probablility = "<<func_total_SIMC->GetProb()<<" *****"<<endl;
-    }
+    }//End if match data.
   
   cout<<"Scale factor for SIMC data = "<<scale_SIMC<<".   Multiplying the scale factor for the elastic peak by the GC efficiency correction of "<<GC_eff<<" yields a scale factor of "<<scale_SIMC*GC_eff<<". Multiplying this value by the DT correction of "<<DT_correction<<" yields a final scale factor of "<<scale_SIMC*GC_eff*DT_correction<<"."<<endl;
   cout<<"Gaussian part of total data fit par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian part of total SIMC fit par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
