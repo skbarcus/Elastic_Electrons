@@ -15,6 +15,8 @@ Int_t show_histos = 1;
 Int_t use_split_density = 0;
 Int_t match_data = 1;
 Int_t gaus_or_total = 1;        //0-> match height of the data and SIMC elastic peaks using the max value of the Gaussian in the total fits. 1-> match height of the data and SIMC elasstic peaks using the max value (in the elastic peak region) of the total fit.
+Int_t subtract_SIMC = 0;             //0-> The exponential fit of the experimental background is used to fill the h_no_elastics histo. It uses the region of fitmin to fitmax. 1-> then the exponential background fit of the experimental data has the generated SIMC elastic events subtracted from it before the h_no_elastics histo is filled. 
+Int_t use_lorentz = 0;
 Double_t scale_SIMC = 1.;       //Scale factor for SIMC histogram.
 Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Int_t runlist[1] = {4075};
@@ -25,7 +27,8 @@ Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Double_t Normfac1 = 0.856831e9;      //XS * 0.59552 0.01045 g/cm^3
 //Double_t Normfac1 = 0.112683e10;      //XS * 0.59552 0.01375 g/cm^3
 //Double_t Normfac1 = 0.856831e9;      //XS * 1.41330 0.01375 g/cm^3
-Double_t Normfac1 = 0.112683e10;      //XS * 1.08312 0.01375 g/cm^3
+//Double_t Normfac1 = 0.112683e10;      //XS * 1.08312 0.01375 g/cm^3
+Double_t Normfac1 = 0.106612e10;      //XS * 1.08312 0.013 g/cm^3 or XS * 1.1881
 Int_t nevts_SIMC = 100000;
   
 Double_t charge = 21.2708;     //Scale the Al background to the charge of the production runs.
@@ -38,7 +41,7 @@ Double_t xb_binwidth = fabs(xbmax-xbmin)/xb_nbins;;
 Double_t xmin = 2.95, xmax = 3.10;
 Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
 //Double_t fitmin = 2.8, fitmax = 3.2;
-Double_t fitmin = 2.3, fitmax = 3.15;
+Double_t fitmin = 2.3, fitmax = 3.25;    //2.3, 3.15
 //Double_t ymin = -0.028, ymax = 0.028;
 Double_t ymin = -0.03, ymax = 0.03;      //I think this should be changed to a L.tr.vz cut instead.
 Double_t thmin = -0.035, thmax = 0.035;  //Dien's cuts.
@@ -350,7 +353,7 @@ void Xbj_New_Fit()
     Bool_t reject;
     reject = kTRUE;
     //reject = kFALSE;
-    if (reject && x[0] > xmin_no_elastics && x[0] < xmax_no_elastics) 
+    if (reject && x[0] > xmin_no_elastics && x[0] < xmax) 
       {
 	TF1::RejectPoint();
 	return 0;
@@ -366,6 +369,12 @@ void Xbj_New_Fit()
     return fitval;
   }
   //g1 = new TF1("g1","gaus",xmin,xmax);
+
+  Double_t fit_lorentz(Double_t *x,Double_t *par)
+  {
+    Double_t fitval = (par[0]*par[2]) / ( pow(x[0]-par[1],2) + pow(0.5*par[2],2) );
+    return fitval;
+  }
 
   //Create a function that is the sum of the exponential background fit and the Gaussian elastic peak fit.
   Double_t fit_total(Double_t *x,Double_t *par) 
@@ -407,6 +416,11 @@ void Xbj_New_Fit()
     return pow(TMath::Exp(par[0]+par[1]*x[0]),2) + fit_exp(x,&par[2]) + fit_gaus(x,&par[4]);
     //return TMath::Exp(par[0]+par[1]*x[0]) + TMath::Exp(par[2]+par[3]*x[0]) + fit_gaus(x,&par[4]);
     //return fit_exp(x,par) + fit_exp(x,&par[2]) + fit_gaus(x,&par[4]);
+  }
+
+ Double_t fit_total_lorentz(Double_t *x,Double_t *par) 
+  {
+    return fit_exp(x,par) + fit_lorentz(x,&par[2]);
   }
 
   //Create a function that draws the full fit including over the elastic peak region.
@@ -710,7 +724,9 @@ void Xbj_New_Fit()
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01045_xs0.59552_6_19_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01375_xs0.59552_6_19_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01045_xs1.4133_6_20_18.root");
-      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01375_xs1.08312_6_20_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01375_xs1.08312_6_20_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs1.08312_7_2_18.root");
+      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs1.1881_7_2_18.root");
       SIMC1->SetBranchStatus("*",0);
       SIMC1->SetBranchStatus("xbj",1);
       SIMC1->SetBranchStatus("ssytar",1);
@@ -725,7 +741,7 @@ void Xbj_New_Fit()
       hSIMC->SetLineColor(3);
       if(show_histos==1)
 	{
-	  SIMC1->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");
+	  SIMC1->Draw("(xbj-0.02009)>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");
 	}
       else //Won't draw the histogram on the canvas but will still fill it.
 	{
@@ -737,7 +753,7 @@ void Xbj_New_Fit()
   //Now we want to fit the background subtracted histogram and find the number of elastic electrons.
 
   //Fit the histogram excluding the elastic peak.
-  TF1 *func_exp_Al = new TF1("func_exp_Al",fit_exp,fitmin,fitmax,2);
+  TF1 *func_exp_Al = new TF1("func_exp_Al",fit_exp,2.65,2.9,2);
   func_exp_Al->SetLineColor(1);
   func_exp_Al->SetParameter(0,12.);
   func_exp_Al->SetParameter(1,-3.);
@@ -758,11 +774,15 @@ void Xbj_New_Fit()
   cout<<"***** Gaussian Fit: Chi^2 = "<<func_gaus_Al->GetChisquare()<<"   nDOF = "<<func_gaus_Al->GetNDF()<<"   Fit Probablility = "<<func_gaus_Al->GetProb()<<" *****"<<endl;
 
   //Fit the combined background exponential and Gaussian elastic peak.
-  TF1 *func_total_Al = new TF1("func_total_Al",fit_total,fitmin,fitmax,5);
+  TF1 *func_total_Al = new TF1("func_total_Al",fit_total,2.5,fitmax,5);
   func_total_Al->SetLineColor(2);
   func_total_Al->SetNpx(1000);
   func_total_Al->SetParameter(0,func_exp_Al->GetParameter(0));
+  //func_total_Al->SetParLimits(0,14.,18.);
+  func_total_Al->SetParLimits(0,func_exp_Al->GetParameter(0),func_exp_Al->GetParameter(0));
   func_total_Al->SetParameter(1,func_exp_Al->GetParameter(1));
+  //func_total_Al->SetParLimits(1,-4.4,-3.6);
+  func_total_Al->SetParLimits(1,func_exp_Al->GetParameter(1),func_exp_Al->GetParameter(1));
   func_total_Al->SetParameter(2,func_gaus_Al->GetParameter(0));
   func_total_Al->SetParameter(3,func_gaus_Al->GetParameter(1));
   func_total_Al->SetParameter(4,func_gaus_Al->GetParameter(2));
@@ -772,6 +792,42 @@ void Xbj_New_Fit()
   //Draw the total combined fit.
   func_total_Al->Draw("same");
 
+  if(use_lorentz == 1)  
+    {
+      //Fit a Lorentzian to the elastic peak region.
+      TF1 *func_lorentz = new TF1("func_lorentz",fit_lorentz,xmin,xmax,3);
+      func_lorentz->SetParameter(0,2.37378);
+      func_lorentz->SetParLimits(0,0.,100.);
+      func_lorentz->SetParameter(1,3.02072);
+      func_lorentz->SetParLimits(1,3.,3.04);
+      func_lorentz->SetParameter(2,0.0217304);
+      func_lorentz->SetParLimits(2,0.018,0.026);
+      func_lorentz->SetLineColor(2);
+      func_lorentz->SetNpx(1000);
+      //func_lorentz->Draw("same");
+      htot->Fit("func_lorentz","same");
+      cout<<"***** Lorentz Fit: Chi^2 = "<<func_lorentz->GetChisquare()<<"   nDOF = "<<func_lorentz->GetNDF()<<"   Fit Probablility = "<<func_lorentz->GetProb()<<" *****"<<endl;
+      
+      //Fit a Lorentzian and an exponetial to the total fit.
+      TF1 *func_total_lorentz = new TF1("func_total_lorentz",fit_total_lorentz,2.6,3.1,5);
+      func_total_lorentz->SetParameter(0,func_exp_Al->GetParameter(0));
+      func_total_lorentz->SetParLimits(0,18.,14.);
+      func_total_lorentz->SetParameter(1,func_exp_Al->GetParameter(1));
+      func_total_lorentz->SetParLimits(1,-3.6,-4.4);
+      func_total_lorentz->SetParameter(2,1.5);//2.37378
+      func_total_lorentz->SetParLimits(2,1.,2.);
+      func_total_lorentz->SetParameter(3,3.02072);
+      func_total_lorentz->SetParLimits(3,3.,3.04);
+      func_total_lorentz->SetParameter(4,0.0217304);
+      func_total_lorentz->SetParLimits(4,0.018,0.026);
+      func_total_lorentz->SetLineColor(2);
+      func_total_lorentz->SetNpx(1000);
+      //func_total_lorentz->Draw("same");
+      htot->Fit("func_total_lorentz","R same M");
+      cout<<"***** Lorentz + exponential Fit: Chi^2 = "<<func_total_lorentz->GetChisquare()<<"   nDOF = "<<func_total_lorentz->GetNDF()<<"   Fit Probablility = "<<func_total_lorentz->GetProb()<<" *****"<<endl;
+      func_total_lorentz->Draw("same");
+    }
+  
   /*
   cout<<"*****Fit of line after elastic peak with Al subtracted*****"<<endl;
   TF1 *func_line_Al_after = new TF1("func_line_Al_after",fit_line,xmax,fitmax,2);
@@ -861,7 +917,7 @@ void Xbj_New_Fit()
   //func_gaus_Al->Draw("same");
 
   //Fit the exponential background without the elastic peak or main radiative tail to be summed with SIMC elastic results.
-  TF1 *func_exp_Al_no_elastics = new TF1("func_exp_Al_no_elastics",fit_exp_no_elastics,fitmin,fitmax,2);
+  TF1 *func_exp_Al_no_elastics = new TF1("func_exp_Al_no_elastics",fit_exp,2.4,2.7,2);
   func_exp_Al_no_elastics->SetLineColor(1);
   func_exp_Al_no_elastics->SetParameter(0,12.);
   func_exp_Al_no_elastics->SetParameter(1,-3.);
@@ -887,13 +943,35 @@ void Xbj_New_Fit()
   for(Int_t i=0;i<xb_nbins;i++)
     {
       //cout<<"xbj = "<<htot->GetXaxis()->GetBinCenter(i)<<endl;
-      if(i>bmin_no_elastics && i<bmax_no_elastics)
+      if(subtract_SIMC == 0)
 	{
-	  h_no_elastics->SetBinContent(i, func_exp_full_Al_no_elastics->Eval( htot->GetXaxis()->GetBinCenter(i) ) );
+	  if(i>bmin_no_elastics && i<bmax_no_elastics)
+	    {
+	      h_no_elastics->SetBinContent(i, func_exp_full_Al_no_elastics->Eval( htot->GetXaxis()->GetBinCenter(i) ) );
+	    }
+	  else
+	    {
+	      h_no_elastics->SetBinContent(i,0);
+	    }
 	}
-      else
+      //If subtracting out the SIMC elastic results from the background first.
+      if(subtract_SIMC == 1)
 	{
-	  h_no_elastics->SetBinContent(i,0);
+	  if(i>bmin_no_elastics && i<axis->FindBin(xmin))
+	    {
+	      //h_no_elastics->SetBinContent(i, func_exp_full_Al_no_elastics->Eval( htot->GetXaxis()->GetBinCenter(i) ) );
+	      //If subtracting out the SIMC elastic results from the background first.
+	      h_no_elastics->SetBinContent(i, func_exp_full_Al_no_elastics->Eval( htot->GetXaxis()->GetBinCenter(i) ) - hSIMC->GetBinContent(i));
+	      cout<<"Xbj = "<<htot->GetXaxis()->GetBinCenter(i)<<"   h_no_elastics = "<<func_exp_full_Al_no_elastics->Eval( htot->GetXaxis()->GetBinCenter(i) )<<"   hSIMC = "<<hSIMC->GetBinContent(i)<<"   h_no_elastics-SIMC = "<<func_exp_full_Al_no_elastics->Eval( htot->GetXaxis()->GetBinCenter(i) ) - hSIMC->GetBinContent(htot->GetXaxis()->GetBinCenter(i))<<endl;
+	    }
+	  else if(i>axis->FindBin(xmax) && i<bmax_no_elastics)
+	    {
+	      h_no_elastics->SetBinContent(i, func_exp_full_Al_no_elastics->Eval( htot->GetXaxis()->GetBinCenter(i) ) );
+	    }
+	  else
+	    {
+	      h_no_elastics->SetBinContent(i,0);
+	    }
 	}
     }
   if(show_histos==1)
