@@ -28,7 +28,7 @@ Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Double_t Normfac1 = 0.112683e10;      //XS * 0.59552 0.01375 g/cm^3
 //Double_t Normfac1 = 0.856831e9;      //XS * 1.41330 0.01375 g/cm^3
 //Double_t Normfac1 = 0.112683e10;      //XS * 1.08312 0.01375 g/cm^3
-Double_t Normfac1 = 0.106612e10;      //XS * 1.08312 0.013 g/cm^3 or XS * 1.1881
+Double_t Normfac1 = 0.106612e10;      //XS * 1.08312 0.013 g/cm^3 or XS * 1.1881 or XS * 0.99206.
 Int_t nevts_SIMC = 100000;
   
 Double_t charge = 21.2708;     //Scale the Al background to the charge of the production runs.
@@ -382,6 +382,19 @@ void Xbj_New_Fit()
     return fit_exp(x,par) + fit_gaus(x,&par[2]);
   }
 
+  //Create a function that is the sum of the exponential background fit and the Gaussian elastic peak fit but skips over a region of the data. 
+  Double_t fit_total_skip(Double_t *x,Double_t *par) 
+  {
+    Bool_t reject;
+    reject = kTRUE;
+    if (reject && x[0] > 2.8 && x[0] < 2.975) 
+      {
+	return fit_exp(x,par) + fit_gaus(x,&par[2]);
+      }
+    Double_t fitval = TMath::Exp(par[0]+par[1]*x[0]);
+    return fitval;
+  }
+
   //Create a function for fitting lines.
   Double_t fit_line(Double_t *x,Double_t *par) 
   {
@@ -726,7 +739,8 @@ void Xbj_New_Fit()
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01045_xs1.4133_6_20_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01375_xs1.08312_6_20_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs1.08312_7_2_18.root");
-      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs1.1881_7_2_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs1.1881_7_2_18.root");
+      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs0.99206_7_5_18.root");
       SIMC1->SetBranchStatus("*",0);
       SIMC1->SetBranchStatus("xbj",1);
       SIMC1->SetBranchStatus("ssytar",1);
@@ -774,7 +788,7 @@ void Xbj_New_Fit()
   cout<<"***** Gaussian Fit: Chi^2 = "<<func_gaus_Al->GetChisquare()<<"   nDOF = "<<func_gaus_Al->GetNDF()<<"   Fit Probablility = "<<func_gaus_Al->GetProb()<<" *****"<<endl;
 
   //Fit the combined background exponential and Gaussian elastic peak.
-  TF1 *func_total_Al = new TF1("func_total_Al",fit_total,2.5,fitmax,5);
+  TF1 *func_total_Al = new TF1("func_total_Al",fit_total,2.5,fitmax,5);//2.5,3.25
   func_total_Al->SetLineColor(2);
   func_total_Al->SetNpx(1000);
   func_total_Al->SetParameter(0,func_exp_Al->GetParameter(0));
@@ -1095,8 +1109,7 @@ void Xbj_New_Fit()
 		  */
 		  h_summed_SIMC->Fit("func_total_SIMC","R same M q");
 		  cout<<"*************************************************************************"<<endl;
-		}
-	      else if(func_total_SIMC->GetMaximum(xmin,xmax)<(func_total_Al->GetMaximum(xmin,xmax)-0.5))
+		}	      else if(func_total_SIMC->GetMaximum(xmin,xmax)<(func_total_Al->GetMaximum(xmin,xmax)-0.5))
 		{
 		  //cout<<"Scale factor for SIMC data- = "<<scale_SIMC<<",   total fit height = "<<func_total_Al->GetMaximum(xmin,xmax)<<",   total fit height = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
 		  if(fabs(func_total_Al->GetMaximum(xmin,xmax)-func_total_SIMC->GetMaximum(xmin,xmax))>100)
@@ -1140,7 +1153,7 @@ void Xbj_New_Fit()
       func_total_gaus_SIMC->SetParameter(0,func_total_SIMC->GetParameter(2));
       func_total_gaus_SIMC->SetParameter(1,func_total_SIMC->GetParameter(3));
       func_total_gaus_SIMC->SetParameter(2,func_total_SIMC->GetParameter(4));
-      Double_t area_data = func_total_gaus_data->Integral(xmin,xmax)/xb_binwidth;
+      Double_t area_data = (func_total_gaus_data->Integral(xmin,xmax)/xb_binwidth) * DT_correction * GC_eff;
       Double_t area_SIMC = func_total_gaus_SIMC->Integral(xmin,xmax)/xb_binwidth;
 
       //Match the areas of the Gaussian portions of both the data and SIMC total fits.
@@ -1217,10 +1230,18 @@ void Xbj_New_Fit()
       cout<<"***** Fit after SIMC data scaled to match experimental data.: Chi^2 = "<<func_total_SIMC->GetChisquare()<<"   nDOF = "<<func_total_SIMC->GetNDF()<<"   Fit Probablility = "<<func_total_SIMC->GetProb()<<" *****"<<endl;
     }//End if match data.
   
-  cout<<"Scale factor for SIMC data = "<<scale_SIMC<<".   Multiplying the scale factor for the elastic peak by the GC efficiency correction of "<<GC_eff<<" yields a scale factor of "<<scale_SIMC*GC_eff<<". Multiplying this value by the DT correction of "<<DT_correction<<" yields a final scale factor of "<<scale_SIMC*GC_eff*DT_correction<<"."<<endl;
-  cout<<"Gaussian part of total data fit par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian part of total SIMC fit par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
-  cout<<"Max height of total data fit in elastic peak region = "<<func_total_Al->GetMaximum(xmin,xmax)<<"   Max height of total SIMC fit in elastic peak region = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
-  
+  if(gaus_or_total == 1)
+    {
+      cout<<"Scale factor for SIMC data = "<<scale_SIMC<<".   Multiplying the scale factor for the elastic peak by the GC efficiency correction of "<<GC_eff<<" yields a scale factor of "<<scale_SIMC*GC_eff<<". Multiplying this value by the DT correction of "<<DT_correction<<" yields a final scale factor of "<<scale_SIMC*GC_eff*DT_correction<<"."<<endl;
+      cout<<"Gaussian part of total data fit par[2] = "<<func_total_Al->GetParameter(2)<<",   Gaussian part of total SIMC fit par[2] = "<<func_total_SIMC->GetParameter(2)<<endl;
+      cout<<"Max height of total data fit in elastic peak region = "<<func_total_Al->GetMaximum(xmin,xmax)<<"   Max height of total SIMC fit in elastic peak region = "<<func_total_SIMC->GetMaximum(xmin,xmax)<<endl;
+    }
+
+  if(gaus_or_total == 2)
+    {
+      cout<<"Scale factor for SIMC data after factoring in DT and GC efficiency corrections = "<<scale_SIMC<<endl;
+    }
+
   //Calculate number of elactrons in elastic peak region for various fits.
   //Set exponential function to the exponential from func_total_Al.
   func_exp_Al->SetParameter(0,func_total_Al->GetParameter(0));
