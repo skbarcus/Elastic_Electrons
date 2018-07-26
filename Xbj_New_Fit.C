@@ -657,6 +657,8 @@ void Xbj_New_Fit()
 
   TH1D *htot = new TH1D("htot","Xbj Minus Al Background" , xb_nbins, xbmin, xbmax);
   //h1->Add(hAl,-1.);
+  htot->GetXaxis()->SetTitle("X_{Bj}");
+  htot->GetYaxis()->SetTitle("Counts");
   htot->Add(h1,hAl,1.,-1.*charge*thickness*rc_dummy/rc_walls);
   htot->Draw();
 
@@ -935,7 +937,7 @@ void Xbj_New_Fit()
   func_exp_Al_no_elastics->SetLineColor(1);
   func_exp_Al_no_elastics->SetParameter(0,12.);
   func_exp_Al_no_elastics->SetParameter(1,-3.);
-  htot->Fit("func_exp_Al_no_elastics","R M");
+  htot->Fit("func_exp_Al_no_elastics","R M 0");
   cout<<"***** Exponential Fit Al Sub No Elastics: Chi^2 = "<<func_exp_Al_no_elastics->GetChisquare()<<"   nDOF = "<<func_exp_Al_no_elastics->GetNDF()<<"   Fit Probablility = "<<func_exp_Al_no_elastics->GetProb()<<" *****"<<endl;
 
   //Bin a histogram to the no elastics exponential fit that can be added to the SIMC elastic data to match the experimental result.
@@ -1332,6 +1334,35 @@ void Xbj_New_Fit()
   //htot->Add(h1,hAl,1.,-1.*charge*thickness*rc_dummy/rc_walls);
   //htot->Draw();
 
+  //Now draw a more presentable looking plot that can be used for posters, talks, and my thesis. 
+  TCanvas* c5=new TCanvas("c5");
+  c5->SetGrid();
+  c5->SetLogy();
+
+  htot->SetLineColor(kRed+1);
+  htot->SetLineWidth(1.75);
+  htot->Draw();
+
+  cout<<h_summed_SIMC->GetXaxis()->FindBin(fitmin)<<endl;
+  //Create and fill a new histogram that shows only the part of the summed SIMC plot that includes the exponential background and not just the elastics.
+  TH1D *h_SIMC_Clean = new TH1D("h_SIMC_Clean", "", xb_nbins, xbmin, xbmax);
+  for(Int_t i=0;i<xb_nbins;i++)
+    {
+      if(i>114)
+	{
+	  h_SIMC_Clean->SetBinContent(i,h_summed_SIMC->GetBinContent(i));
+	}
+      else
+	{
+	  h_SIMC_Clean->SetBinContent(i,0);
+	}
+    }
+  func_total_Al->Draw("same");
+  func_total_SIMC->SetLineColor(4);
+  func_total_SIMC->Draw("same");
+  h_SIMC_Clean->SetLineColor(kBlue+1);
+  h_SIMC_Clean->SetLineWidth(1.75);
+  h_SIMC_Clean->Draw("same");
 
   st->Stop();
   cout<<"*********************************************"<<endl;
