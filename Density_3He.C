@@ -49,7 +49,7 @@ void Density_3He()
       cout<<"zreact["<<i<<"] = "<<zreact[i]<<"   rho["<<i<<"] = "<<rho[i]<<endl;
     }
 
-  TH2D *h1 = new TH2D("h1","Rho vs Zreact" , 60, -0.122, 0.114,100,0.,0.04);
+  TH2D *h1 = new TH2D("h1","Density Profile" , 60, -0.122, 0.114,100,0.,0.04);
 
   for(Int_t i=0;i<60;i++)
     {
@@ -59,6 +59,8 @@ void Density_3He()
   TCanvas* c1=new TCanvas("c1");
   c1->SetGrid();
 
+  gStyle->SetOptStat(0);
+  gStyle->SetTitleFontSize(0.08);
   h1->GetXaxis()->SetTitle("Zreact (m)");
   h1->GetYaxis()->SetTitle("Rho (g/cm^{3})");
   h1->GetYaxis()->SetTitleOffset(1.3);
@@ -66,6 +68,15 @@ void Density_3He()
   h1->SetMarkerSize(1);
   h1->SetMarkerColor(2);
   h1->Draw("");
+
+  h1->GetYaxis()->CenterTitle(true);
+  h1->GetYaxis()->SetLabelSize(0.035);
+  h1->GetYaxis()->SetTitleSize(0.06);
+  h1->GetYaxis()->SetTitleOffset(0.75);
+  h1->GetXaxis()->CenterTitle(true);
+  h1->GetXaxis()->SetLabelSize(0.05);
+  h1->GetXaxis()->SetTitleSize(0.06);
+  h1->GetXaxis()->SetTitleOffset(0.75);
 
   Double_t disc=0.0;
   Double_t avg1=0.0, avg2=0.0, avg3=0.0;
