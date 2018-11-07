@@ -655,7 +655,7 @@ void Xbj_New_Fit()
   c3->SetGrid();
   c3->SetLogy();
 
-  TH1D *htot = new TH1D("htot","Xbj Minus Al Background" , xb_nbins, xbmin, xbmax);
+  TH1D *htot = new TH1D("htot","Background Subtracted X_{Bj} with Physics Cuts" , xb_nbins, xbmin, xbmax);
   //h1->Add(hAl,-1.);
   htot->GetXaxis()->SetTitle("X_{Bj}");
   htot->GetYaxis()->SetTitle("Counts");
@@ -1325,6 +1325,19 @@ void Xbj_New_Fit()
   TH1D *hAlScaled = new TH1D("hAlScaled","Xbj and Scaled Al Background" , xb_nbins, xbmin, xbmax);
   //h1->Add(hAl,-1.);
   h1->Draw();
+  h1->SetTitle("Production Runs Compared to Scaled Al Background");
+  h1->GetXaxis()->SetTitle("X_{Bj}");
+  h1->GetYaxis()->SetTitle("Counts");
+  gStyle->SetTitleFontSize(0.08);
+  h1->GetYaxis()->CenterTitle(true);
+  h1->GetYaxis()->SetLabelSize(0.04);
+  h1->GetYaxis()->SetTitleSize(0.06);
+  h1->GetYaxis()->SetTitleOffset(0.75);
+  h1->GetXaxis()->CenterTitle(true);
+  h1->GetXaxis()->SetLabelSize(0.04);
+  h1->GetXaxis()->SetTitleSize(0.06);
+  h1->GetXaxis()->SetTitleOffset(0.65);
+
   hAlScaled->Add(hAl,1.*charge*thickness*rc_dummy/rc_walls);
   hAlScaled->Draw("same");
   hAlScaled->SetLineColor(kRed);
