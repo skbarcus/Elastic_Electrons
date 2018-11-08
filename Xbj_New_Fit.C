@@ -43,13 +43,14 @@ Double_t xmin_no_elastics = 2.8, xmax_no_elastics = 3.15;
 //Double_t fitmin = 2.8, fitmax = 3.2;
 Double_t fitmin = 2.3, fitmax = 3.25;    //2.3, 3.15
 //Double_t ymin = -0.028, ymax = 0.028;
-Double_t ymin = -0.03, ymax = 0.03;      //I think this should be changed to a L.tr.vz cut instead.
-Double_t thmin = -0.035, thmax = 0.035;  //Dien's cuts.
-Double_t phmin = -0.025, phmax = 0.025;
-Double_t dpmin = -0.035, dpmax = 0.035;
-//Double_t thmin = -0.042, thmax = 0.049;
-//Double_t phmin = -0.03, phmax = 0.03;
-//Double_t dpmin = -0.02, dpmax = 0.03;
+Double_t ymin = -0.030, ymax = 0.028;
+//Double_t ymin = -0.03, ymax = 0.03;      //I think this should be changed to a L.tr.vz cut instead.
+//Double_t thmin = -0.035, thmax = 0.035;  //Dien's cuts.
+//Double_t phmin = -0.025, phmax = 0.025;
+//Double_t dpmin = -0.035, dpmax = 0.035;
+Double_t thmin = -0.042, thmax = 0.049;
+Double_t phmin = -0.03, phmax = 0.03;
+Double_t dpmin = -0.02, dpmax = 0.03;
 Double_t ymin_SIMC = ymin*100., ymax_SIMC = ymax*100.;
 Double_t thmin_SIMC = TMath::ATan(thmin), thmax_SIMC = TMath::ATan(thmax);
 Double_t phmin_SIMC = TMath::ATan(phmin), phmax_SIMC = TMath::ATan(phmax);
