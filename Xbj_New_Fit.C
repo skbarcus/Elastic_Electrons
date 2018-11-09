@@ -792,7 +792,7 @@ void Xbj_New_Fit()
 
   //Fit the combined background exponential and Gaussian elastic peak.
   TF1 *func_total_Al = new TF1("func_total_Al",fit_total,2.5,fitmax,5);//2.5,3.25
-  func_total_Al->SetLineColor(2);
+  func_total_Al->SetLineColor(4);
   func_total_Al->SetNpx(1000);
   func_total_Al->SetParameter(0,func_exp_Al->GetParameter(0));
   //func_total_Al->SetParLimits(0,14.,18.);
@@ -1326,7 +1326,8 @@ void Xbj_New_Fit()
   TH1D *hAlScaled = new TH1D("hAlScaled","Xbj and Scaled Al Background" , xb_nbins, xbmin, xbmax);
   //h1->Add(hAl,-1.);
   h1->Draw();
-  h1->SetTitle("Production Runs Compared to Scaled Al Background");
+  //h1->SetTitle("Production Runs Compared to Scaled Al Background");
+  h1->SetTitle("X_{Bj} of ^{3}He Production Runs for E08-014");
   h1->GetXaxis()->SetTitle("X_{Bj}");
   h1->GetYaxis()->SetTitle("Counts");
   gStyle->SetTitleFontSize(0.08);
@@ -1353,9 +1354,21 @@ void Xbj_New_Fit()
   c5->SetGrid();
   c5->SetLogy();
 
-  htot->SetLineColor(kRed+1);
+  htot->SetLineColor(kBlue+1);
   htot->SetLineWidth(1.75);
   htot->Draw();
+
+  htot->SetTitle("Combined Fit of X_{Bj} for E08-014 ^{3}He Production Runs");
+  htot->GetXaxis()->SetTitle("X_{Bj}");
+  htot->GetYaxis()->SetTitle("Counts");
+  htot->GetYaxis()->CenterTitle(true);
+  htot->GetYaxis()->SetLabelSize(0.035);
+  htot->GetYaxis()->SetTitleSize(0.06);
+  htot->GetYaxis()->SetTitleOffset(0.75);
+  htot->GetXaxis()->CenterTitle(true);
+  htot->GetXaxis()->SetLabelSize(0.035);
+  htot->GetXaxis()->SetTitleSize(0.06);
+  htot->GetXaxis()->SetTitleOffset(0.65);
 
   cout<<h_summed_SIMC->GetXaxis()->FindBin(fitmin)<<endl;
   //Create and fill a new histogram that shows only the part of the summed SIMC plot that includes the exponential background and not just the elastics.
@@ -1372,9 +1385,9 @@ void Xbj_New_Fit()
 	}
     }
   func_total_Al->Draw("same");
-  func_total_SIMC->SetLineColor(4);
+  func_total_SIMC->SetLineColor(2);
   func_total_SIMC->Draw("same");
-  h_SIMC_Clean->SetLineColor(kBlue+1);
+  h_SIMC_Clean->SetLineColor(kRed+1);
   h_SIMC_Clean->SetLineWidth(1.75);
   h_SIMC_Clean->Draw("same");
 
