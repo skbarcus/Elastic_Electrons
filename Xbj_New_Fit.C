@@ -59,6 +59,8 @@ Double_t density_cut = -0.01469; //Y target position where the density profile c
 Double_t pr_yint = 2000.;
 Double_t GC_eff = 203./196.;     //GC efficiency correction to the elastic electron peak height. 
 Double_t DT_correction = 1./0.9527;
+Double_t Trig_eff = 1./0.988577;
+Double_t VDC_eff = 1./0.99175;
 
 void Xbj_New_Fit() 
 {
@@ -1156,7 +1158,7 @@ void Xbj_New_Fit()
       func_total_gaus_SIMC->SetParameter(0,func_total_SIMC->GetParameter(2));
       func_total_gaus_SIMC->SetParameter(1,func_total_SIMC->GetParameter(3));
       func_total_gaus_SIMC->SetParameter(2,func_total_SIMC->GetParameter(4));
-      Double_t area_data = (func_total_gaus_data->Integral(xmin,xmax)/xb_binwidth) * DT_correction * GC_eff;
+      Double_t area_data = (func_total_gaus_data->Integral(xmin,xmax)/xb_binwidth) * DT_correction * GC_eff * Trig_eff * VDC_eff;
       Double_t area_SIMC = func_total_gaus_SIMC->Integral(xmin,xmax)/xb_binwidth;
 
       //Match the areas of the Gaussian portions of both the data and SIMC total fits.
@@ -1242,6 +1244,8 @@ void Xbj_New_Fit()
 
   if(gaus_or_total == 2)
     {
+      cout<<"Final area of data Gaussian without corrections = "<<(func_total_gaus_data->Integral(xmin,xmax)/xb_binwidth)<<". Final area of data Gaussian with corrections = "<<area_data<<endl;
+      cout<<"Final area of SIMC Gaussian = "<<area_SIMC<<endl;
       cout<<"Scale factor for SIMC data after factoring in DT and GC efficiency corrections = "<<scale_SIMC<<endl;
     }
 
@@ -1390,6 +1394,26 @@ void Xbj_New_Fit()
   h_SIMC_Clean->SetLineColor(kRed+1);
   h_SIMC_Clean->SetLineWidth(1.75);
   h_SIMC_Clean->Draw("same");
+
+  //Now draw a plot of just the SIMC elastic data. 
+  TCanvas* c6=new TCanvas("c6");
+  c6->SetGrid();
+  c6->SetLogy();
+
+  hSIMC->SetLineColor(kBlue);
+  hSIMC->SetLineWidth(1.75);
+  hSIMC->Draw();
+  hSIMC->SetTitle("SIMC ^{3}He Elastic Electrons");
+  hSIMC->GetXaxis()->SetTitle("X_{Bj}");
+  hSIMC->GetYaxis()->SetTitle("Counts");
+  hSIMC->GetYaxis()->CenterTitle(true);
+  hSIMC->GetYaxis()->SetLabelSize(0.035);
+  hSIMC->GetYaxis()->SetTitleSize(0.06);
+  hSIMC->GetYaxis()->SetTitleOffset(0.75);
+  hSIMC->GetXaxis()->CenterTitle(true);
+  hSIMC->GetXaxis()->SetLabelSize(0.035);
+  hSIMC->GetXaxis()->SetTitleSize(0.06);
+  hSIMC->GetXaxis()->SetTitleOffset(0.65);
 
   st->Stop();
   cout<<"*********************************************"<<endl;
