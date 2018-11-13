@@ -12,7 +12,7 @@
 //#define theta1 21.;
 Int_t use_histo_method = 1;
 Int_t show_histos = 1;
-Int_t use_split_density = 0;
+Int_t use_split_density = 0;    //Use two different desities based on a y target cut.
 Int_t match_data = 1;
 Int_t gaus_or_total = 2;        //0-> match height of the data and SIMC elastic peaks using the max value of the Gaussian in the total fits. 1-> match height of the data and SIMC elasstic peaks using the max value (in the elastic peak region) of the total fit. 2-> match the areas of the Gaussian parts of the total data and total SIMC fits. 
 Int_t subtract_SIMC = 0;             //0-> The exponential fit of the experimental background is used to fill the h_no_elastics histo. It uses the region of fitmin to fitmax. 1-> then the exponential background fit of the experimental data has the generated SIMC elastic events subtracted from it before the h_no_elastics histo is filled. 
@@ -29,6 +29,8 @@ Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Double_t Normfac1 = 0.856831e9;      //XS * 1.41330 0.01375 g/cm^3
 //Double_t Normfac1 = 0.112683e10;      //XS * 1.08312 0.01375 g/cm^3
 Double_t Normfac1 = 0.106612e10;      //XS * 1.08312 0.013 g/cm^3 or XS * 1.1881 or XS * 0.99206.
+
+//Double_t Normfac1 = 0.282782E+10, Normfac2 = 0.191004E+10;
 Int_t nevts_SIMC = 100000;
   
 Double_t charge = 21.2708;     //Scale the Al background to the charge of the production runs.
@@ -55,7 +57,7 @@ Double_t ymin_SIMC = ymin*100., ymax_SIMC = ymax*100.;
 Double_t thmin_SIMC = TMath::ATan(thmin), thmax_SIMC = TMath::ATan(thmax);
 Double_t phmin_SIMC = TMath::ATan(phmin), phmax_SIMC = TMath::ATan(phmax);
 Double_t dpmin_SIMC = dpmin*100., dpmax_SIMC = dpmax*100.;
-Double_t density_cut = -0.01469; //Y target position where the density profile changes.
+Double_t density_cut = -0.01469*100; //Y target position where the density profile changes.
 Double_t pr_yint = 2000.;
 Double_t GC_eff = 203./196.;     //GC efficiency correction to the elastic electron peak height. 
 Double_t DT_correction = 1./0.9527;
@@ -675,7 +677,9 @@ void Xbj_New_Fit()
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.576893_5_29_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.57299897225_5_29_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0345_xs0.57299897225_5_30_18.root");
-      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0345_xs0.59552_6_11_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0345_xs0.59552_6_11_18.root");
+
+      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0345_xs0.99206_11_12_18.root");
       SIMC1->SetBranchStatus("*",0);
       SIMC1->SetBranchStatus("xbj",1);
       SIMC1->SetBranchStatus("ssytar",1);
@@ -691,7 +695,9 @@ void Xbj_New_Fit()
       //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.576893_5_29_18.root");
       //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.57299897225_5_29_18.root");
       //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0233_xs0.57299897225_5_30_18.root");
-      SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0233_xs0.59552_6_11_18.root");
+      //SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.0233_xs0.59552_6_11_18.root");
+
+      SIMC2->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_cuts_rho0.0233_xs0.99206_11_12_18.root");
       SIMC2->SetBranchStatus("*",0);
       SIMC2->SetBranchStatus("xbj",1);
       SIMC2->SetBranchStatus("ssytar",1);
