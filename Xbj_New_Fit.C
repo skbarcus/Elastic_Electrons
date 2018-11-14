@@ -28,10 +28,12 @@ Int_t runlist[6] = {3892, 3893, 3894, 4073, 4074, 4075};
 //Double_t Normfac1 = 0.112683e10;      //XS * 0.59552 0.01375 g/cm^3
 //Double_t Normfac1 = 0.856831e9;      //XS * 1.41330 0.01375 g/cm^3
 //Double_t Normfac1 = 0.112683e10;      //XS * 1.08312 0.01375 g/cm^3
-Double_t Normfac1 = 0.106612e10;      //XS * 1.08312 0.013 g/cm^3 or XS * 1.1881 or XS * 0.99206.
+
+//Double_t Normfac1 = 0.106612e10;      //XS * 1.08312 0.013 g/cm^3 or XS * 1.1881 or XS * 0.99206.
+Double_t Normfac1 = 0.106268E+10;       //3he_elastic_final_rho0.013_xs0.99206_11_14_18.root
 
 //Double_t Normfac1 = 0.282782E+10, Normfac2 = 0.191004E+10;
-Int_t nevts_SIMC = 100000;
+Int_t nevts_SIMC = 740000;//100000
   
 Double_t charge = 21.2708;     //Scale the Al background to the charge of the production runs.
 Double_t thickness = 0.1979;   //Scale the Al background down to the thickness of 3He cell.
@@ -751,7 +753,12 @@ void Xbj_New_Fit()
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.01375_xs1.08312_6_20_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs1.08312_7_2_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs1.1881_7_2_18.root");
-      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs0.99206_7_5_18.root");
+
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_expanded_cuts_rho0.013_xs0.99206_7_5_18.root");
+
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_rho0.013_xs0.99206_11_14_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_rho0.013_xs0.96504_11_14_18.root");
+      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_rho0.013_xs1.01984_11_14_18.root");
       SIMC1->SetBranchStatus("*",0);
       SIMC1->SetBranchStatus("xbj",1);
       SIMC1->SetBranchStatus("ssytar",1);
