@@ -773,7 +773,8 @@ void Xbj_New_Fit()
       hSIMC->SetLineColor(3);
       if(show_histos==1)
 	{
-	  SIMC1->Draw("(xbj-0.02009)>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");
+	  SIMC1->Draw("xbj>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"");       //Doesn't draw SIMC histo.
+	  //SIMC1->Draw("(xbj-0.02009)>>hSIMC",Form("Weight*%f/%d*(ssytar>%f&&ssytar<%f&&ssxptar>%f&&ssxptar<%f&&ssyptar>%f&&ssyptar<%f&&ssdelta>%f&&ssdelta<%f)",Normfac1,nevts_SIMC,ymin_SIMC,ymax_SIMC,thmin_SIMC,thmax_SIMC,phmin_SIMC,phmax_SIMC,dpmin_SIMC,dpmax_SIMC),"same");      //Draws SIMC histo.
 	}
       else //Won't draw the histogram on the canvas but will still fill it.
 	{
@@ -1008,7 +1009,7 @@ void Xbj_New_Fit()
     }
   if(show_histos==1)
     {
-      h_no_elastics->Draw("same");
+      //h_no_elastics->Draw("same");  //Uncomment to show histogram of background.
     }
   h_no_elastics->SetLineColor(1);
 
@@ -1016,7 +1017,7 @@ void Xbj_New_Fit()
   TH1D *h_summed_SIMC = new TH1D("h_summed_SIMC","Fit Background No Elastics Summed with SIMC Elastic Results" , xb_nbins, xbmin, xbmax);
   h_summed_SIMC->Add(hSIMC,h_no_elastics,scale_SIMC,1.);
   h_summed_SIMC->Draw("same");
-  h_summed_SIMC->SetLineColor(6);
+  h_summed_SIMC->SetLineColor(2);
 
   //Fit h_summed_SIMC histo with the same fit as the real data. Comparison of the magnitude of the Gaussians will allow use to calibrate the XS in the Monte Carlo.
   cout<<"*****Fit of SIMC plus one exponential fitting background in region skipping most elastics.*****"<<endl;
@@ -1308,7 +1309,7 @@ void Xbj_New_Fit()
 	  h4->SetBinContent(i, func_exp_full_Al->Eval( htot->GetXaxis()->GetBinCenter(bmin+i) ) );
 	  //cout<<"bin "<<bmin+i<<" has x value "<<h1->GetXaxis()->GetBinCenter(bmin+i)<<" and func_exp_full->Eval("<<h1->GetXaxis()->GetBinCenter(bmin+i)<<") = "<<func_exp_full->Eval( h1->GetXaxis()->GetBinCenter(bmin+i) )<<endl;
 	}
-      h4->Draw("same");
+      //h4->Draw("same"); //Uncomment to show histogram with the same bin sizes in the region of the elastic peak with the same bin widths as the Xbj histo.
       h4->SetLineColor(kRed);
       
       //Find the integrals of the two histograms and subtract the fit histo integral from the Xbj histo to get the approximate number of events in the elastic peak.
@@ -1375,7 +1376,7 @@ void Xbj_New_Fit()
   htot->SetLineWidth(1.75);
   htot->Draw();
 
-  htot->SetTitle("Combined Fit of X_{Bj} for E08-014 ^{3}He Production Runs");
+  htot->SetTitle("Elastic Peak Fits of ^{3}He Production Runs and SIMC Elastics Summed with QE Background Fit");
   htot->GetXaxis()->SetTitle("X_{Bj}");
   htot->GetYaxis()->SetTitle("Counts");
   htot->GetYaxis()->CenterTitle(true);
@@ -1427,6 +1428,30 @@ void Xbj_New_Fit()
   hSIMC->GetXaxis()->SetLabelSize(0.035);
   hSIMC->GetXaxis()->SetTitleSize(0.06);
   hSIMC->GetXaxis()->SetTitleOffset(0.65);
+
+  //Now draw a plot of just the QE background fit binned to a histogram. 
+  TCanvas* c7=new TCanvas("c7");
+  c7->SetGrid();
+  c7->SetLogy();
+
+  htot->Draw();
+  h_no_elastics->SetLineColor(kBlack);
+  h_no_elastics->SetLineWidth(1.75);
+  h_no_elastics->SetTitle("Histogram Binned to Fit of ^{3}He Quasielastic Background");
+  h_no_elastics->GetXaxis()->SetTitle("X_{Bj}");
+  h_no_elastics->GetYaxis()->SetTitle("Counts");
+  h_no_elastics->GetYaxis()->CenterTitle(true);
+  h_no_elastics->GetYaxis()->SetLabelSize(0.035);
+  h_no_elastics->GetYaxis()->SetTitleSize(0.06);
+  h_no_elastics->GetYaxis()->SetTitleOffset(0.75);
+  h_no_elastics->GetXaxis()->CenterTitle(true);
+  h_no_elastics->GetXaxis()->SetLabelSize(0.035);
+  h_no_elastics->GetXaxis()->SetTitleSize(0.06);
+  h_no_elastics->GetXaxis()->SetTitleOffset(0.65);
+  h_no_elastics->Draw("");
+  //h_no_elastics->GetYaxis()->SetRange(0,4500);//useless
+  h_no_elastics->GetYaxis()->SetRangeUser(1., 5000.);//Can't set first parameter to zero.
+  htot->Draw("same");
 
   st->Stop();
   cout<<"*********************************************"<<endl;
