@@ -758,7 +758,11 @@ void Xbj_New_Fit()
 
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_rho0.013_xs0.99206_11_14_18.root");
       //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_rho0.013_xs0.96504_11_14_18.root");
-      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_rho0.013_xs1.01984_11_14_18.root");
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_final_rho0.013_xs1.01984_11_14_18.root");//Final root file with Amroun's fit in SIMC.
+
+      //My representative fits in SIMC.
+      //SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_new_fit_rho0.013_xs1.01984_2_16_19.root");
+      SIMC1->Add("/home/skbarcus/Tritium/Analysis/He3/Rootfiles/3he_elastic_new_fit_rho0.013_xs1.23197_2_16_19.root");
       SIMC1->SetBranchStatus("*",0);
       SIMC1->SetBranchStatus("xbj",1);
       SIMC1->SetBranchStatus("ssytar",1);
@@ -1438,6 +1442,7 @@ void Xbj_New_Fit()
   h_no_elastics->SetLineColor(kBlack);
   h_no_elastics->SetLineWidth(1.75);
   h_no_elastics->SetTitle("Histogram Binned to Fit of ^{3}He Quasielastic Background");
+  //htot->SetTitle("^{3}He X_{Bj} Aluminium Background Subtracted");
   h_no_elastics->GetXaxis()->SetTitle("X_{Bj}");
   h_no_elastics->GetYaxis()->SetTitle("Counts");
   h_no_elastics->GetYaxis()->CenterTitle(true);

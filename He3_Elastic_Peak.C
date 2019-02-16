@@ -13,11 +13,11 @@
 Double_t PI = 3.14159265359;
 Double_t deg2rad = PI/180.;
 
-Double_t M = 3.01603*0.931;//3.0160293;         //Mass of Helium 3 GeV.
+Double_t M = 3.01603*0.9315;//3.0160293;         //Mass of Helium 3 GeV.
 
 Double_t E = 3.356;             //Incident beam energy GeV.
 Double_t Ep = 0.;               //Energy of deflected electron GeV.
-Double_t dE = 0.155;              //Momentum acceptance of HRS.
+Double_t dE = 0.151;              //Momentum acceptance of HRS.
 Double_t dtheta = 0.03*1/deg2rad;    //Horizontal angular acceptance of HRS.
 
 Double_t xmin = 0.;
